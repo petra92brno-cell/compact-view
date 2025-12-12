@@ -157,9 +157,9 @@
   z-index: 9;
 }
 
-.calendar__row--notes:first-of-type {
+.calendar__row--campaigns-row {
   position: relative;
-  z-index: 7;
+  overflow: visible;
 }
 
 /* Time Column */
@@ -485,7 +485,7 @@
   background: #4A90E2;
   border-radius: 4px;
   padding: 4px 8px;
-  margin: 2px;
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -496,6 +496,11 @@
   min-height: 24px;
   pointer-events: auto;
   box-sizing: border-box;
+  z-index: 1;
+}
+
+.calendar-campaign-inline--spanning {
+  margin-right: 1px;
 }
 
 .calendar-campaign-inline:hover {
@@ -580,6 +585,12 @@
 .calendar__cell--notes {
   min-height: 28px;
   padding: 2px 4px;
+  position: relative;
+}
+
+.calendar__cell--campaign-row {
+  padding: 2px;
+  overflow: visible;
 }
 
 .calendar__cell-content {
@@ -587,6 +598,7 @@
   flex-direction: column;
   gap: 2px;
   width: 100%;
+  position: relative;
 }
 
 /* Note Card - TENČÍ, kompaktnější */

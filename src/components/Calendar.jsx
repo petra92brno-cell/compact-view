@@ -164,6 +164,46 @@ const NoteCard = ({ note }) => {
   );
 };
 
+// Campaign Bar in Cell - spanuje přes více dnů
+const CampaignBarInCell = ({ campaign, weekDates, startIndex }) => {
+  const startDate = new Date(campaign.startDate);
+  const endDate = new Date(campaign.endDate);
+  const startCol = weekDates.findIndex(d => d.toDateString() === startDate.toDateString());
+  const endCol = weekDates.findIndex(d => d.toDateString() === endDate.toDateString());
+  
+  if (startCol === -1 || endCol === -1) return null;
+  
+  const span = endCol - startCol + 1;
+  const cellWidth = 100 / 7; // 7 dní v týdnu
+  const borderWidth = 1; // šířka borderu mezi buňkami
+  
+  return (
+    <div 
+      className="calendar-campaign-inline calendar-campaign-inline--spanning"
+      style={{ 
+        backgroundColor: campaign.color || '#4A90E2',
+        width: `calc(${span * cellWidth}% + ${(span - 1) * borderWidth}px)`,
+        position: 'absolute',
+        left: '2px',
+        top: '2px',
+        zIndex: 1,
+      }}
+    >
+      <div className="calendar-campaign__content">
+        <div className="calendar-campaign__icon-wrapper">
+          <img src={CampaignIcon} alt="Campaign" className="calendar-campaign__icon" />
+        </div>
+        <div className="calendar-campaign__text">
+          <div className="calendar-campaign__title">{campaign.title}</div>
+          {campaign.description && (
+            <div className="calendar-campaign__description">{campaign.description}</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Get status badge component
 const StatusBadge = ({ status }) => {
   // Map status values
@@ -366,9 +406,9 @@ const Calendar = ({ posts = [], campaigns = [], notes = [] }) => {
           })}
         </div>
 
-        {/* Notes Rows (2 rows) - obsahuje kampaně i poznámky */}
+        {/* Notes Rows (2 rows) - první řádek obsahuje kampaně, druhý poznámky */}
         {[1, 2].map((rowNum) => (
-          <div key={`notes-${rowNum}`} className="calendar__row calendar__row--notes">
+          <div key={`notes-${rowNum}`} className={`calendar__row calendar__row--notes ${rowNum === 1 ? 'calendar__row--campaigns-row' : ''}`}>
             <div className="calendar__time-column">
               <div className="calendar__time-label">Notes</div>
             </div>
@@ -376,6 +416,29 @@ const Calendar = ({ posts = [], campaigns = [], notes = [] }) => {
               const dayNotes = getNotesForDay(displayNotes, date);
               const noteForThisRow = dayNotes[rowNum - 1] || null;
               
+              // Pro první řádek - kampaně
+              if (rowNum === 1) {
+                const dayCampaigns = getCampaignsForDay(displayCampaigns, date);
+                // Zobraz kampaň jen v prvním dni jejího rozsahu
+                const campaignForThisDay = dayCampaigns.find(campaign => {
+                  const startDate = new Date(campaign.startDate);
+                  return startDate.toDateString() === date.toDateString();
+                });
+                
+                return (
+                  <div key={index} className="calendar__cell calendar__cell--notes calendar__cell--campaign-row">
+                    {campaignForThisDay && (
+                      <CampaignBarInCell 
+                        campaign={campaignForThisDay} 
+                        weekDates={weekDates}
+                        startIndex={index}
+                      />
+                    )}
+                  </div>
+                );
+              }
+              
+              // Pro druhý řádek - poznámky
               return (
                 <div key={index} className="calendar__cell calendar__cell--notes">
                   <div className="calendar__cell-content">
@@ -386,45 +449,6 @@ const Calendar = ({ posts = [], campaigns = [], notes = [] }) => {
             })}
           </div>
         ))}
-        
-        {/* Campaigns Overlay - spans multiple days jako jedna čárka */}
-        <div className="calendar__campaigns-overlay-inline">
-          {displayCampaigns.map(campaign => {
-            const startDate = new Date(campaign.startDate);
-            const endDate = new Date(campaign.endDate);
-            const startCol = weekDates.findIndex(d => d.toDateString() === startDate.toDateString());
-            const endCol = weekDates.findIndex(d => d.toDateString() === endDate.toDateString());
-            
-            if (startCol === -1 && endCol === -1) return null;
-            
-            const actualStartCol = startCol === -1 ? 0 : startCol;
-            const actualEndCol = endCol === -1 ? weekDates.length - 1 : endCol;
-            const span = actualEndCol - actualStartCol + 1;
-            
-            return (
-              <div
-                key={campaign.id}
-                className="calendar-campaign-inline"
-                style={{
-                  gridColumn: `${actualStartCol + 2} / span ${span}`,
-                  backgroundColor: campaign.color || '#4A90E2',
-                }}
-              >
-                <div className="calendar-campaign__content">
-                  <div className="calendar-campaign__icon-wrapper">
-                    <img src={CampaignIcon} alt="Campaign" className="calendar-campaign__icon" />
-                  </div>
-                  <div className="calendar-campaign__text">
-                    <div className="calendar-campaign__title">{campaign.title}</div>
-                    {campaign.description && (
-                      <div className="calendar-campaign__description">{campaign.description}</div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
 
         {/* Hour Rows */}
         {hours.map((hour) => (
