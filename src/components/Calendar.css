@@ -466,7 +466,7 @@
   display: grid;
   grid-template-columns: 81px repeat(7, 1fr);
   position: absolute;
-  top: 72px; /* after header + first notes row */
+  top: 64px; /* after header (36px) + first notes row (28px) */
   left: 0;
   right: 0;
   height: 28px;
