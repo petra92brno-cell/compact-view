@@ -255,18 +255,7 @@ const Calendar = ({ posts = [], campaigns = [], notes = [] }) => {
     return h;
   }, []);
 
-  // Mock data for campaigns and notes
-  const mockCampaigns = useMemo(() => [
-    {
-      id: 1,
-      title: 'Black Friday Campaign',
-      description: 'Promo campaign for social media',
-      startDate: new Date(2025, 10, 17), // Nov 17
-      endDate: new Date(2025, 10, 19), // Nov 19
-      color: '#4A90E2'
-    }
-  ], []);
-
+  // Mock data for notes (campaigns removed)
   const mockNotes = useMemo(() => [
     {
       id: 1,
@@ -275,7 +264,7 @@ const Calendar = ({ posts = [], campaigns = [], notes = [] }) => {
     }
   ], []);
 
-  const displayCampaigns = campaigns.length > 0 ? campaigns : mockCampaigns;
+  const displayCampaigns = campaigns;
   const displayNotes = notes.length > 0 ? notes : mockNotes;
 
   // Navigate to previous week
