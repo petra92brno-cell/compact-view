@@ -366,24 +366,7 @@ const Calendar = ({ posts = [], campaigns = [], notes = [] }) => {
           })}
         </div>
 
-        {/* Campaigns Row - silnější řádek */}
-        <div className="calendar__row calendar__row--campaigns">
-          <div className="calendar__time-column">
-            <div className="calendar__time-label">Campaigns</div>
-          </div>
-          {weekDates.map((date, index) => (
-            <div key={index} className="calendar__cell calendar__cell--campaigns"></div>
-          ))}
-        </div>
-        
-        {/* Campaigns Overlay - spans multiple days */}
-        <div className="calendar__campaigns-overlay">
-          {displayCampaigns.map(campaign => (
-            <CampaignBar key={campaign.id} campaign={campaign} weekDates={weekDates} />
-          ))}
-        </div>
-
-        {/* Notes Rows (2 rows) - tenčí řádky */}
+        {/* Notes Rows (2 rows) - obsahuje kampaně i poznámky */}
         {[1, 2].map((rowNum) => (
           <div key={`notes-${rowNum}`} className="calendar__row calendar__row--notes">
             <div className="calendar__time-column">
@@ -392,10 +375,29 @@ const Calendar = ({ posts = [], campaigns = [], notes = [] }) => {
             {weekDates.map((date, index) => {
               const dayNotes = getNotesForDay(displayNotes, date);
               const noteForThisRow = dayNotes[rowNum - 1] || null;
+              const dayCampaigns = getCampaignsForDay(displayCampaigns, date);
+              const campaignForThisRow = rowNum === 1 ? dayCampaigns[0] : null;
               
               return (
                 <div key={index} className="calendar__cell calendar__cell--notes">
-                  {noteForThisRow && <NoteCard note={noteForThisRow} />}
+                  <div className="calendar__cell-content">
+                    {campaignForThisRow && (
+                      <div className="calendar-campaign-inline" style={{ backgroundColor: campaignForThisRow.color || '#4A90E2' }}>
+                        <div className="calendar-campaign__content">
+                          <div className="calendar-campaign__icon-wrapper">
+                            <img src={CampaignIcon} alt="Campaign" className="calendar-campaign__icon" />
+                          </div>
+                          <div className="calendar-campaign__text">
+                            <div className="calendar-campaign__title">{campaignForThisRow.title}</div>
+                            {campaignForThisRow.description && (
+                              <div className="calendar-campaign__description">{campaignForThisRow.description}</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {noteForThisRow && <NoteCard note={noteForThisRow} />}
+                  </div>
                 </div>
               );
             })}

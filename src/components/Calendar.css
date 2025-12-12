@@ -461,65 +461,42 @@
   object-fit: cover;
 }
 
-/* Campaigns Row - SILNĚJŠÍ řádek */
-.calendar__row--campaigns {
-  min-height: 56px; /* Silnější než notes */
-  position: relative;
-  background: var(--color-layer-level-1);
-}
-
-.calendar__cell--campaigns {
-  min-height: 56px;
-  padding: 4px;
-}
-
-/* Campaigns Overlay - Grid layout pro spanování přes více dnů */
-.calendar__campaigns-overlay {
-  display: grid;
-  grid-template-columns: 81px repeat(7, 1fr);
-  position: absolute;
-  top: 36px; /* after header */
-  left: 0;
-  right: 0;
-  height: 56px;
-  pointer-events: none;
-  z-index: 5;
-}
-
-/* Campaign Bar - SILNĚJŠÍ, s ikonou, zaoblené rohy */
-.calendar-campaign {
+/* Campaign Bar - inline v buňkách Notes */
+.calendar-campaign-inline {
   background: #4A90E2;
-  border-radius: 8px; /* Zaoblenější rohy */
-  padding: 10px 12px; /* Větší padding = silnější bar */
-  margin: 4px 2px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
   transition: all 0.2s;
-  pointer-events: auto;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Stín pro hloubku */
-  border-left: 4px solid rgba(255, 255, 255, 0.3); /* Levý border pro vizuální odlišení */
-  min-height: 40px; /* Silnější než notes */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid rgba(255, 255, 255, 0.3);
+  min-height: 32px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.calendar-campaign:hover {
+.calendar-campaign-inline:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   opacity: 0.95;
 }
 
-.calendar-campaign__content {
+.calendar-campaign__content,
+.calendar-campaign-inline .calendar-campaign__content {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   min-width: 0;
 }
 
 .calendar-campaign__icon-wrapper {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -530,8 +507,8 @@
 }
 
 .calendar-campaign__icon {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   filter: brightness(0) invert(1); /* Bílá ikona */
 }
 
@@ -541,10 +518,10 @@
 }
 
 .calendar-campaign__title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: white;
-  line-height: 18px;
+  line-height: 16px;
   font-family: 'Inter', sans-serif;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -552,10 +529,10 @@
 }
 
 .calendar-campaign__description {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 400;
   color: rgba(255, 255, 255, 0.85);
-  line-height: 14px;
+  line-height: 12px;
   font-family: 'Inter', sans-serif;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -563,14 +540,21 @@
   margin-top: 2px;
 }
 
-/* Notes Rows - TENČÍ řádky */
+/* Notes Rows - obsahuje kampaně i poznámky */
 .calendar__row--notes {
-  min-height: 36px; /* Tenčí než campaigns */
+  min-height: 36px;
 }
 
 .calendar__cell--notes {
   min-height: 36px;
   padding: 4px;
+}
+
+.calendar__cell-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
 }
 
 /* Note Card - TENČÍ, kompaktnější, jiný tvar */
