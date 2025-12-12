@@ -467,19 +467,6 @@
   object-fit: cover;
 }
 
-/* Campaigns Overlay - spans multiple days jako jedna čárka */
-.calendar__campaigns-overlay-inline {
-  display: grid;
-  grid-template-columns: 81px repeat(7, 1fr);
-  position: absolute;
-  top: 36px; /* after header (36px) */
-  left: 0;
-  right: 0;
-  height: 28px;
-  pointer-events: none;
-  z-index: 6;
-}
-
 /* Campaign Bar - TENČÍ, spanuje přes více dnů */
 .calendar-campaign-inline {
   background: #4A90E2;
