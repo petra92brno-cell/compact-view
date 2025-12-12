@@ -375,27 +375,10 @@ const Calendar = ({ posts = [], campaigns = [], notes = [] }) => {
             {weekDates.map((date, index) => {
               const dayNotes = getNotesForDay(displayNotes, date);
               const noteForThisRow = dayNotes[rowNum - 1] || null;
-              const dayCampaigns = getCampaignsForDay(displayCampaigns, date);
-              const campaignForThisRow = rowNum === 1 ? dayCampaigns[0] : null;
               
               return (
                 <div key={index} className="calendar__cell calendar__cell--notes">
                   <div className="calendar__cell-content">
-                    {campaignForThisRow && (
-                      <div className="calendar-campaign-inline" style={{ backgroundColor: campaignForThisRow.color || '#4A90E2' }}>
-                        <div className="calendar-campaign__content">
-                          <div className="calendar-campaign__icon-wrapper">
-                            <img src={CampaignIcon} alt="Campaign" className="calendar-campaign__icon" />
-                          </div>
-                          <div className="calendar-campaign__text">
-                            <div className="calendar-campaign__title">{campaignForThisRow.title}</div>
-                            {campaignForThisRow.description && (
-                              <div className="calendar-campaign__description">{campaignForThisRow.description}</div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
                     {noteForThisRow && <NoteCard note={noteForThisRow} />}
                   </div>
                 </div>
@@ -403,6 +386,45 @@ const Calendar = ({ posts = [], campaigns = [], notes = [] }) => {
             })}
           </div>
         ))}
+        
+        {/* Campaigns Overlay - spans multiple days jako jedna čárka */}
+        <div className="calendar__campaigns-overlay-inline">
+          {displayCampaigns.map(campaign => {
+            const startDate = new Date(campaign.startDate);
+            const endDate = new Date(campaign.endDate);
+            const startCol = weekDates.findIndex(d => d.toDateString() === startDate.toDateString());
+            const endCol = weekDates.findIndex(d => d.toDateString() === endDate.toDateString());
+            
+            if (startCol === -1 && endCol === -1) return null;
+            
+            const actualStartCol = startCol === -1 ? 0 : startCol;
+            const actualEndCol = endCol === -1 ? weekDates.length - 1 : endCol;
+            const span = actualEndCol - actualStartCol + 1;
+            
+            return (
+              <div
+                key={campaign.id}
+                className="calendar-campaign-inline"
+                style={{
+                  gridColumn: `${actualStartCol + 2} / span ${span}`,
+                  backgroundColor: campaign.color || '#4A90E2',
+                }}
+              >
+                <div className="calendar-campaign__content">
+                  <div className="calendar-campaign__icon-wrapper">
+                    <img src={CampaignIcon} alt="Campaign" className="calendar-campaign__icon" />
+                  </div>
+                  <div className="calendar-campaign__text">
+                    <div className="calendar-campaign__title">{campaign.title}</div>
+                    {campaign.description && (
+                      <div className="calendar-campaign__description">{campaign.description}</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
         {/* Hour Rows */}
         {hours.map((hour) => (
