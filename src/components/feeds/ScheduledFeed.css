@@ -1,0 +1,30 @@
+@import '../../styles/design-system.css';
+
+.scheduled-feed {
+  width: 100%;
+  padding: var(--spacing-xl);
+  box-sizing: border-box;
+  background: #F3F3F5;
+}
+
+.scheduled-feed--compact {
+  padding: 0;
+  background: #F3F3F5;
+}
+
+.scheduled-feed__container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  align-items: center;
+}
+
+.scheduled-feed__container > * {
+  max-width: 600px;
+  width: 100%;
+}
+
+
+
+
+

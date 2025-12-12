@@ -1,0 +1,65 @@
+:root {
+  /* Border Radius */
+  --border-radius-large: 8px;
+  --border-radius-medium: 6px;
+  --border-radius-small: 4px;
+  --border-radius-full: 999px;
+
+  /* Colors - Layer Levels */
+  --color-layer-level-1: #FFFFFF;
+  --color-layer-level-2: #F3F3F5;
+
+  /* Colors - Borders */
+  --color-border-primary: rgba(0, 0, 0, 0.2);
+  --color-border-secondary: rgba(0, 0, 0, 0.1);
+
+  /* Colors - Text (On Layer) */
+  --color-text-primary: #1A1F26;
+  --color-text-secondary: #2F3744;
+  --color-text-tertiary: #9D9DA0;
+  --color-on-layer-primary: #24242b;
+  --color-on-layer-secondary: #505057;
+  --color-on-layer-tertiary: #9d9da0;
+  --color-on-layer-inverse: #f9f9fa;
+
+  /* Colors - Platform */
+  --color-platform-facebook: #0866ff;
+
+  /* Colors - Buttons */
+  --color-button-ghost: rgba(255, 255, 255, 0);
+  --color-button-invisible: rgba(255, 255, 255, 0);
+
+  /* Colors - Shadows */
+  --color-shadow-inner: rgba(0, 0, 0, 0.05);
+  --color-shadow-drop-30: rgba(0, 0, 0, 0.3);
+  --color-shadow-drop-20: rgba(0, 0, 0, 0.2);
+
+  /* Colors - Status */
+  --color-status-done: #10B981;
+  --color-status-in-progress: #F59E0B;
+  --color-status-no-action: #EF4444;
+  --color-status-none: #9D9DA0;
+
+  /* Colors - Table */
+  --color-table-row-odd: #ffffff;
+  --color-table-row-hover: #d5efff;
+  --color-table-row-hover-border: #85c7ff;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  
+  /* Space tokens (Figma) */
+  --space-0: 0px;
+  --space-1: 3px;
+  --space-2: 6px;
+  --space-3: 9px;
+  --space-4: 12px;
+  --space-6: 24px;
+  --space-8: 36px;
+  --space-9: 48px;
+}
+
