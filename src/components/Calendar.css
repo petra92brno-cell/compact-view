@@ -466,7 +466,7 @@
   display: grid;
   grid-template-columns: 81px repeat(7, 1fr);
   position: absolute;
-  top: 64px; /* after header (36px) + first notes row (28px) */
+  top: 36px; /* after header */
   left: 0;
   right: 0;
   height: 28px;
@@ -564,6 +564,10 @@
 /* Notes Rows - obsahuje kampaně i poznámky */
 .calendar__row--notes {
   min-height: 28px; /* Tenčí */
+  position: relative;
+}
+
+.calendar__row--notes:first-of-type {
   position: relative;
 }
 
