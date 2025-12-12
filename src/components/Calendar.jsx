@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import './Calendar.css';
+import CampaignIcon from '../assets/Publisher.svg';
+import NoteIcon from '../assets/Internal note.svg';
 
 // Helper function to parse date from post
 const parsePostDate = (dateString) => {
@@ -85,6 +87,83 @@ const formatHour = (hour) => {
   return `${hour - 12} PM`;
 };
 
+// Helper function to check if date is within range
+const isDateInRange = (date, startDate, endDate) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+  return d >= start && d <= end;
+};
+
+// Helper function to get campaigns for a specific day
+const getCampaignsForDay = (campaigns, date) => {
+  return campaigns.filter(campaign => {
+    const startDate = new Date(campaign.startDate);
+    const endDate = new Date(campaign.endDate);
+    return isDateInRange(date, startDate, endDate);
+  });
+};
+
+// Helper function to get notes for a specific day
+const getNotesForDay = (notes, date) => {
+  return notes.filter(note => {
+    const noteDate = new Date(note.date);
+    return noteDate.toDateString() === date.toDateString();
+  });
+};
+
+// Campaign Bar Component - silnější, s ikonou
+const CampaignBar = ({ campaign, weekDates }) => {
+  const startDate = new Date(campaign.startDate);
+  const endDate = new Date(campaign.endDate);
+  
+  const startCol = weekDates.findIndex(d => d.toDateString() === startDate.toDateString());
+  const endCol = weekDates.findIndex(d => d.toDateString() === endDate.toDateString());
+  
+  if (startCol === -1 && endCol === -1) return null;
+  
+  const actualStartCol = startCol === -1 ? 0 : startCol;
+  const actualEndCol = endCol === -1 ? weekDates.length - 1 : endCol;
+  const span = actualEndCol - actualStartCol + 1;
+  
+  return (
+    <div 
+      className="calendar-campaign"
+      style={{
+        gridColumn: `${actualStartCol + 2} / span ${span}`,
+        backgroundColor: campaign.color || '#4A90E2',
+      }}
+    >
+      <div className="calendar-campaign__content">
+        <div className="calendar-campaign__icon-wrapper">
+          <img src={CampaignIcon} alt="Campaign" className="calendar-campaign__icon" />
+        </div>
+        <div className="calendar-campaign__text">
+          <div className="calendar-campaign__title">{campaign.title}</div>
+          {campaign.description && (
+            <div className="calendar-campaign__description">{campaign.description}</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Note Card Component - tenčí, kompaktnější, s ikonou
+const NoteCard = ({ note }) => {
+  return (
+    <div className="calendar-note">
+      <div className="calendar-note__icon-wrapper">
+        <img src={NoteIcon} alt="Note" className="calendar-note__icon" />
+      </div>
+      <div className="calendar-note__text">{note.text}</div>
+    </div>
+  );
+};
+
 // Get status badge component
 const StatusBadge = ({ status }) => {
   // Map status values
@@ -139,7 +218,7 @@ const PlatformBadge = ({ platform }) => {
   return null;
 };
 
-const Calendar = ({ posts = [] }) => {
+const Calendar = ({ posts = [], campaigns = [], notes = [] }) => {
   // Set initial date to November 17, 2025 (Monday)
   const [currentDate, setCurrentDate] = useState(() => {
     const date = new Date(2025, 10, 17); // November 17, 2025 (month is 0-indexed)
@@ -175,6 +254,29 @@ const Calendar = ({ posts = [] }) => {
     }
     return h;
   }, []);
+
+  // Mock data for campaigns and notes
+  const mockCampaigns = useMemo(() => [
+    {
+      id: 1,
+      title: 'Black Friday Campaign',
+      description: 'Promo campaign for social media',
+      startDate: new Date(2025, 10, 17), // Nov 17
+      endDate: new Date(2025, 10, 19), // Nov 19
+      color: '#4A90E2'
+    }
+  ], []);
+
+  const mockNotes = useMemo(() => [
+    {
+      id: 1,
+      text: 'Important meeting with marketing team',
+      date: new Date(2025, 10, 18), // Nov 18
+    }
+  ], []);
+
+  const displayCampaigns = campaigns.length > 0 ? campaigns : mockCampaigns;
+  const displayNotes = notes.length > 0 ? notes : mockNotes;
 
   // Navigate to previous week
   const goToPreviousWeek = () => {
@@ -264,15 +366,39 @@ const Calendar = ({ posts = [] }) => {
           })}
         </div>
 
-        {/* Notes Rows (2 rows) */}
+        {/* Campaigns Row - silnější řádek */}
+        <div className="calendar__row calendar__row--campaigns">
+          <div className="calendar__time-column">
+            <div className="calendar__time-label">Campaigns</div>
+          </div>
+          {weekDates.map((date, index) => (
+            <div key={index} className="calendar__cell calendar__cell--campaigns"></div>
+          ))}
+        </div>
+        
+        {/* Campaigns Overlay - spans multiple days */}
+        <div className="calendar__campaigns-overlay">
+          {displayCampaigns.map(campaign => (
+            <CampaignBar key={campaign.id} campaign={campaign} weekDates={weekDates} />
+          ))}
+        </div>
+
+        {/* Notes Rows (2 rows) - tenčí řádky */}
         {[1, 2].map((rowNum) => (
           <div key={`notes-${rowNum}`} className="calendar__row calendar__row--notes">
             <div className="calendar__time-column">
               <div className="calendar__time-label">Notes</div>
             </div>
-            {weekDates.map((date, index) => (
-              <div key={index} className="calendar__cell"></div>
-            ))}
+            {weekDates.map((date, index) => {
+              const dayNotes = getNotesForDay(displayNotes, date);
+              const noteForThisRow = dayNotes[rowNum - 1] || null;
+              
+              return (
+                <div key={index} className="calendar__cell calendar__cell--notes">
+                  {noteForThisRow && <NoteCard note={noteForThisRow} />}
+                </div>
+              );
+            })}
           </div>
         ))}
 
