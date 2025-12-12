@@ -147,6 +147,7 @@
   background: var(--color-layer-level-1);
   z-index: 10;
   border-bottom: 1px solid var(--color-border-secondary);
+  min-height: 36px;
 }
 
 .calendar__row--notes {
@@ -154,6 +155,11 @@
   top: 36px;
   background: var(--color-layer-level-1);
   z-index: 9;
+}
+
+.calendar__row--notes:first-of-type {
+  position: relative;
+  z-index: 7;
 }
 
 /* Time Column */
@@ -466,12 +472,12 @@
   display: grid;
   grid-template-columns: 81px repeat(7, 1fr);
   position: absolute;
-  top: 36px; /* after header */
+  top: 36px; /* after header (36px) */
   left: 0;
   right: 0;
   height: 28px;
   pointer-events: none;
-  z-index: 5;
+  z-index: 6;
 }
 
 /* Campaign Bar - TENČÍ, spanuje přes více dnů */
