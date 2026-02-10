@@ -104,6 +104,7 @@ const CampaignDialog = ({
           uniqueId: campaignData.uniqueId || '',
           labels: JSON.stringify(campaignData.labels || []),
           briefContent: campaignData.briefContent || '',
+          linkTrackingEnabled: campaignData.linkTrackingEnabled || false,
         }
       : null
   );
@@ -280,7 +281,8 @@ const CampaignDialog = ({
         startDate.getTime() !== orig.startDate ||
         endDate.getTime() !== orig.endDate ||
         JSON.stringify(selectedLabels) !== orig.labels ||
-        briefContent !== orig.briefContent
+        briefContent !== orig.briefContent ||
+        linkTrackingEnabled !== orig.linkTrackingEnabled
       );
     }
     // In create mode, check if anything was filled in
@@ -291,9 +293,10 @@ const CampaignDialog = ({
       endDate.getTime() !== initialDateRef.current ||
       uniqueId !== '' ||
       selectedLabels.length > 0 ||
-      !isBriefEmpty
+      !isBriefEmpty ||
+      linkTrackingEnabled !== false
     );
-  }, [isEditMode, name, color, startDate, endDate, selectedLabels, briefContent, uniqueId, isBriefEmpty]);
+  }, [isEditMode, name, color, startDate, endDate, selectedLabels, briefContent, uniqueId, isBriefEmpty, linkTrackingEnabled]);
 
   // Handle close button click — check for unsaved changes first
   const handleCloseAttempt = () => {
@@ -382,6 +385,7 @@ const CampaignDialog = ({
                       uniqueId: uniqueId.trim(),
                       labels: selectedLabels,
                       briefContent,
+                      linkTrackingEnabled,
                     });
                   }
                 }}
@@ -403,6 +407,7 @@ const CampaignDialog = ({
                         uniqueId: uniqueId.trim(),
                         labels: selectedLabels,
                         briefContent,
+                        linkTrackingEnabled,
                       });
                     }
                   }}
@@ -644,6 +649,32 @@ const CampaignDialog = ({
                   })}
                 </div>
               )}
+            </div>
+
+            {/* LINK TRACKING (UTM) Card */}
+            <div className="link-tracking-card">
+              <div className="link-tracking-card__header">
+                <div className="link-tracking-card__header-left">
+                  <svg className="link-tracking-card__header-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M6.667 8.667a3.333 3.333 0 005.026.36l2-2A3.333 3.333 0 008.98 2.313l-1.147 1.14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M9.333 7.333a3.333 3.333 0 00-5.026-.36l-2 2a3.333 3.333 0 004.713 4.714l1.14-1.14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span className="link-tracking-card__header-label">LINK TRACKING (UTM)</span>
+                </div>
+                <button
+                  type="button"
+                  className={`link-tracking-card__toggle ${linkTrackingEnabled ? 'link-tracking-card__toggle--on' : ''}`}
+                  onClick={() => setLinkTrackingEnabled(prev => !prev)}
+                  role="switch"
+                  aria-checked={linkTrackingEnabled}
+                  aria-label="Toggle link tracking"
+                >
+                  <span className="link-tracking-card__toggle-label">
+                    {linkTrackingEnabled ? 'ON' : 'OFF'}
+                  </span>
+                  <span className="link-tracking-card__toggle-knob" />
+                </button>
+              </div>
             </div>
           </div>
         )}

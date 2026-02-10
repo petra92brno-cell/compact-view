@@ -817,6 +817,112 @@
 /* (Overflow +N removed – all labels are now shown with wrapping) */
 
 /* ============================================= */
+/* LINK TRACKING (UTM) CARD                      */
+/* ============================================= */
+
+.link-tracking-card {
+  background: #FFFFFF;
+  border: 1px solid var(--color-border-secondary, rgba(0, 0, 0, 0.1));
+  border-radius: var(--border-radius-large, 8px);
+  padding: 24px;
+  margin-top: 16px;
+}
+
+.link-tracking-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.link-tracking-card__header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.link-tracking-card__header-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-on-layer-secondary, #505057);
+  flex-shrink: 0;
+}
+
+.link-tracking-card__header-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-on-layer-secondary, #505057);
+  line-height: 16px;
+  font-family: 'Inter', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Toggle switch */
+.link-tracking-card__toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 52px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 14px;
+  background: #D1D5DB;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.link-tracking-card__toggle:hover {
+  background: #B8BCC4;
+}
+
+.link-tracking-card__toggle--on {
+  background: #4338CA;
+}
+
+.link-tracking-card__toggle--on:hover {
+  background: #3730A3;
+}
+
+/* Toggle knob */
+.link-tracking-card__toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  background: #FFFFFF;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
+}
+
+.link-tracking-card__toggle--on .link-tracking-card__toggle-knob {
+  transform: translateX(24px);
+}
+
+/* Toggle label text (ON/OFF) */
+.link-tracking-card__toggle-label {
+  position: absolute;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  color: #FFFFFF;
+  user-select: none;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.link-tracking-card__toggle--on .link-tracking-card__toggle-label {
+  left: 8px;
+  opacity: 1;
+}
+
+/* ============================================= */
 /* BRIEF EDITOR CARD                             */
 /* ============================================= */
 
