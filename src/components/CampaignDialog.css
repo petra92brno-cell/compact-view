@@ -737,17 +737,6 @@
   background: var(--color-layer-level-2, #EDEDEF);
 }
 
-/* Mandatory chip - special style */
-.content-labels-card__chip--mandatory {
-  background: #EEF2FF;
-  border-color: #C7D2FE;
-  color: #3730A3;
-}
-
-.content-labels-card__chip--mandatory:hover {
-  background: #E0E7FF;
-}
-
 /* Campaign content label chip (auto-generated from Unique ID) */
 .content-labels-card__chip--campaign {
   background: #E0E7FF;

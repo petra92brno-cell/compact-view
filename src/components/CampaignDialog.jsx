@@ -60,13 +60,16 @@ const CampaignDialog = ({
     !!(isEditMode ? campaignData?.name : initialData?.name)
   );
 
+  // Link tracking (UTM) toggle state
+  const [linkTrackingEnabled, setLinkTrackingEnabled] = useState(
+    getInitialValue('linkTrackingEnabled', 'linkTrackingEnabled', false)
+  );
+
   // Content labels state
   const [selectedLabels, setSelectedLabels] = useState(
     isEditMode && campaignData?.labels ? [...campaignData.labels] : []
   );
-  const [mandatoryLabelId, setMandatoryLabelId] = useState(
-    isEditMode && campaignData?.labels?.length > 0 ? campaignData.labels[0].id : null
-  );
+  // mandatoryLabelId removed – only the campaign label (from Unique ID) is special
   const [isLabelsDropdownOpen, setIsLabelsDropdownOpen] = useState(false);
   const labelsCardRef = useRef(null);
   const addLabelBtnRef = useRef(null);
@@ -208,27 +211,12 @@ const CampaignDialog = ({
   // Handle content labels apply
   const handleLabelsApply = (labels) => {
     setSelectedLabels(labels);
-    // Set the first label as mandatory if none set yet
-    if (labels.length > 0 && !mandatoryLabelId) {
-      setMandatoryLabelId(labels[0].id);
-    }
-    // If the mandatory label was removed, clear it or set a new one
-    if (labels.length > 0 && mandatoryLabelId && !labels.find(l => l.id === mandatoryLabelId)) {
-      setMandatoryLabelId(labels[0].id);
-    }
-    if (labels.length === 0) {
-      setMandatoryLabelId(null);
-    }
   };
 
   // Remove a label chip
   const handleRemoveLabel = (labelId) => {
-    if (labelId === mandatoryLabelId) return; // Can't remove mandatory
     const updated = selectedLabels.filter(l => l.id !== labelId);
     setSelectedLabels(updated);
-    if (updated.length === 0) {
-      setMandatoryLabelId(null);
-    }
   };
 
   // Build campaign content label from Unique ID (shown first in chips)
@@ -630,19 +618,16 @@ const CampaignDialog = ({
                 <div className="content-labels-card__chips">
                   {allDisplayLabels.map((label) => {
                     const isCampaignLabel = !!label.isCampaignLabel;
-                    const isMandatory = label.id === mandatoryLabelId;
-                    const isNonRemovable = isCampaignLabel || isMandatory;
                     return (
                       <span
                         key={label.id}
                         className={`content-labels-card__chip ${
-                          isCampaignLabel ? 'content-labels-card__chip--campaign' :
-                          isMandatory ? 'content-labels-card__chip--mandatory' : ''
+                          isCampaignLabel ? 'content-labels-card__chip--campaign' : ''
                         }`}
-                        data-tooltip={label.name}
+                        data-tooltip={isCampaignLabel ? 'Mandatory label for campaign and cannot be removed' : label.name}
                       >
                         <span className="content-labels-card__chip-name">{label.name}</span>
-                        {!isNonRemovable && (
+                        {!isCampaignLabel && (
                           <button
                             className="content-labels-card__chip-remove"
                             type="button"
