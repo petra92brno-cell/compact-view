@@ -564,6 +564,18 @@ export const mockCampaigns = [
     labels: [],
     briefContent: '',
   },
+  {
+    id: 7,
+    title: 'Influencer Collaboration',
+    name: 'Influencer Collaboration',
+    description: '',
+    startDate: dayStart(3),
+    endDate: dayStart(8),
+    color: '#FF6B9D',
+    uniqueId: 'SEPH-INFLU-2026',
+    labels: [],
+    briefContent: '',
+  },
   // COMPLETED campaigns (ended in the past)
   {
     id: 5,

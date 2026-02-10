@@ -229,18 +229,20 @@ const CampaignBarInCell = ({ campaign, weekDates, startCol, span, extendsBeyondW
 };
 
 // Campaign Bar Absolute - zobrazen jako all-day event přes celou šířku
-const CampaignBarAbsolute = ({ campaign, startCol, span, extendsBeyondWeek = false, rowIndex = 0, onClick }) => {
+const CampaignBarAbsolute = ({ campaign, startCol, span, extendsBeyondWeek = false, startsBefore = false, rowIndex = 0, onClick }) => {
   if (startCol === -1 || span < 1) return null;
   
   const cellWidthPercent = 100 / 7; // 7 dní v týdnu
   const leftPercent = startCol * cellWidthPercent;
   const widthPercent = span * cellWidthPercent;
   
-  // Pokud kampaně přesahuje týden, použijeme zelenou barvu a ostrý konec
-  const backgroundColor = extendsBeyondWeek ? '#4CAF50' : (campaign.color || '#2196f3');
-  const className = extendsBeyondWeek 
-    ? 'calendar-campaign-bar-absolute calendar-campaign-bar-absolute--extends-beyond' 
-    : 'calendar-campaign-bar-absolute';
+  // Always use the campaign's own color
+  const backgroundColor = campaign.color || '#2196f3';
+  
+  // Build className based on overflow state
+  let className = 'calendar-campaign-bar-absolute';
+  if (extendsBeyondWeek) className += ' calendar-campaign-bar-absolute--extends-beyond';
+  if (startsBefore) className += ' calendar-campaign-bar-absolute--starts-before';
   
   // Offset pro více kampaní ve stejném období (stacking)
   const topOffset = rowIndex * 32; // 27px height + 5px margin
@@ -250,8 +252,8 @@ const CampaignBarAbsolute = ({ campaign, startCol, span, extendsBeyondWeek = fal
       className={className}
       style={{ 
         backgroundColor: backgroundColor,
-        left: `calc(${leftPercent}% + 3px)`,
-        width: `calc(${widthPercent}% - 6px)`,
+        left: `calc(${leftPercent}% + ${startsBefore ? '0px' : '3px'})`,
+        width: `calc(${widthPercent}% - ${startsBefore && extendsBeyondWeek ? '0px' : startsBefore || extendsBeyondWeek ? '3px' : '6px'})`,
         top: `${topOffset}px`,
         height: '27px',
       }}
@@ -264,7 +266,7 @@ const CampaignBarAbsolute = ({ campaign, startCol, span, extendsBeyondWeek = fal
         <div className="calendar-campaign-bar-absolute__title">{campaign.title}</div>
       </div>
       {extendsBeyondWeek && (
-        <div className="calendar-campaign-bar-absolute__arrow"></div>
+        <div className="calendar-campaign-bar-absolute__arrow" style={{ borderLeftColor: backgroundColor }}></div>
       )}
     </div>
   );
@@ -697,43 +699,45 @@ const Calendar = ({ posts = [], campaigns = [], notes = [], userPosts = [], dele
 
         {/* Campaigns Container - all campaigns visible at once like Google Calendar */}
         {(() => {
+          // Helper: check if two dates are the same calendar day
+          const isSameDay = (a, b) =>
+            a.getFullYear() === b.getFullYear() &&
+            a.getMonth() === b.getMonth() &&
+            a.getDate() === b.getDate();
+
+          const weekStart = new Date(weekDates[0]);
+          weekStart.setHours(0, 0, 0, 0);
+          const weekEnd = new Date(weekDates[weekDates.length - 1]);
+          weekEnd.setHours(23, 59, 59, 999);
+
           // Group campaigns by overlapping periods and assign row indices
           const campaignRows = [];
           const processedCampaigns = displayCampaigns.map((campaign, index) => {
-            const startDate = new Date(campaign.startDate);
-            const endDate = new Date(campaign.endDate);
-            
-            // Normalize dates to start of day for comparison
-            startDate.setHours(0, 0, 0, 0);
-            endDate.setHours(23, 59, 59, 999);
-            
-            const weekStart = new Date(weekDates[0]);
-            weekStart.setHours(0, 0, 0, 0);
-            const weekEnd = new Date(weekDates[weekDates.length - 1]);
-            weekEnd.setHours(23, 59, 59, 999);
+            const cStart = new Date(campaign.startDate);
+            cStart.setHours(0, 0, 0, 0);
+            const cEnd = new Date(campaign.endDate);
+            cEnd.setHours(23, 59, 59, 999);
             
             // Check if campaign overlaps with week
-            if (endDate < weekStart || startDate > weekEnd) {
+            if (cEnd < weekStart || cStart > weekEnd) {
               return null;
             }
             
-            const startCol = weekDates.findIndex(d => {
-              const dStr = d.toDateString();
-              const sStr = startDate.toDateString();
-              return dStr === sStr;
-            });
-            const endCol = weekDates.findIndex(d => {
-              const dStr = d.toDateString();
-              const eStr = endDate.toDateString();
-              return dStr === eStr;
-            });
-            
             // Check if campaign extends beyond the week
-            const extendsBeyondWeek = endDate > weekEnd;
+            const extendsBeyondWeek = cEnd > weekEnd;
+            const startsBefore = cStart < weekStart;
             
-            // Calculate actual columns
+            // Clamp to week boundaries for column calculation (same as MonthView)
+            const visStart = cStart < weekStart ? weekStart : cStart;
+            const visEnd = cEnd > weekEnd ? weekEnd : cEnd;
+            
+            // Find columns using clamped dates with isSameDay
+            const startCol = weekDates.findIndex(d => isSameDay(d, visStart));
+            const endCol = weekDates.findIndex(d => isSameDay(d, visEnd));
+            
+            // Calculate actual columns with fallback
             const actualStartCol = startCol === -1 ? 0 : startCol;
-            const actualEndCol = extendsBeyondWeek ? weekDates.length - 1 : (endCol === -1 ? weekDates.length - 1 : endCol);
+            const actualEndCol = endCol === -1 ? weekDates.length - 1 : endCol;
             const span = actualEndCol - actualStartCol + 1;
             
             // Find appropriate row (check for overlaps)
@@ -760,6 +764,7 @@ const Calendar = ({ posts = [], campaigns = [], notes = [], userPosts = [], dele
               startCol: actualStartCol,
               span,
               extendsBeyondWeek,
+              startsBefore,
               rowIndex
             };
           }).filter(Boolean);
@@ -778,7 +783,7 @@ const Calendar = ({ posts = [], campaigns = [], notes = [], userPosts = [], dele
           
           return (
             <div className="calendar__campaigns-container">
-              <div className="calendar__row calendar__row--campaigns" style={{ height: `${containerHeight}px` }}>
+              <div className="calendar__row calendar__row--campaigns" style={{ minHeight: `${containerHeight}px` }}>
                 <div className="calendar__time-column">
                   <div className="calendar__time-label calendar__time-label--campaigns">CAMPAING</div>
                 </div>
@@ -802,6 +807,7 @@ const Calendar = ({ posts = [], campaigns = [], notes = [], userPosts = [], dele
                       startCol={item.startCol}
                       span={item.span}
                       extendsBeyondWeek={item.extendsBeyondWeek}
+                      startsBefore={item.startsBefore}
                       rowIndex={item.rowIndex}
                       onClick={handleOpenEditDialog}
                     />
