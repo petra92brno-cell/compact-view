@@ -1,0 +1,263 @@
+/* =========================================================
+   MonthView – compact monthly calendar grid
+   ========================================================= */
+
+.month-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  background: #f3f3f5;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ---- Header row (MON … SUN) ---- */
+
+.month-view__header-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid #e0e0e4;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.month-view__header-cell {
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+  border-right: 1px solid #e0e0e4;
+  user-select: none;
+}
+
+.month-view__header-cell:last-child {
+  border-right: none;
+}
+
+/* ---- Body (scrollable weeks) ---- */
+
+.month-view__body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ---- Week row ---- */
+
+.month-view__week-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  position: relative; /* for absolute campaign bars */
+  min-height: 120px;
+  border-bottom: 1px solid #e0e0e4;
+}
+
+/* ---- Day cell ---- */
+
+.month-view__day-cell {
+  border-right: 1px solid #e0e0e4;
+  padding: 4px 4px 2px;
+  display: flex;
+  flex-direction: column;
+  min-height: 120px;
+  max-height: 160px;
+  background: #fff;
+  cursor: pointer;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: background-color 0.15s;
+}
+
+.month-view__day-cell:last-child {
+  border-right: none;
+}
+
+.month-view__day-cell:hover {
+  background: #f9f9fb;
+}
+
+.month-view__day-cell--outside {
+  background: #fafafa;
+}
+
+.month-view__day-cell--outside .month-view__day-number {
+  color: #c0c0c8;
+}
+
+.month-view__day-cell--outside .month-view__post-item {
+  opacity: 0.5;
+}
+
+.month-view__day-cell--today {
+  background: rgba(213, 239, 255, 0.18);
+}
+
+/* ---- Day number ---- */
+
+.month-view__day-number-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 2px 2px;
+  flex-shrink: 0;
+  height: 24px;
+}
+
+.month-view__day-number {
+  font-size: 12px;
+  font-weight: 500;
+  color: #2f3744;
+  line-height: 22px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.month-view__day-number--today {
+  background: #0038E5;
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ---- Campaign bar (absolutely positioned across week row) ---- */
+
+.month-view__campaign-bar {
+  position: absolute;
+  height: 20px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  z-index: 2;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 0.5px 2px rgba(0, 0, 0, 0.15);
+  transition: opacity 0.15s;
+}
+
+.month-view__campaign-bar:hover {
+  opacity: 0.88;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+}
+
+.month-view__campaign-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 20px;
+}
+
+/* Spacer inside the cell to push posts below campaign bars */
+
+.month-view__campaign-spacer {
+  flex-shrink: 0;
+}
+
+/* ---- Post items ---- */
+
+.month-view__posts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.month-view__post-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 2px;
+  border-radius: 3px;
+  min-height: 18px;
+  max-height: 18px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background-color 0.12s;
+}
+
+.month-view__post-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.month-view__post-time {
+  font-size: 11px;
+  font-weight: 600;
+  color: #2f3744;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 16px;
+}
+
+.month-view__post-text {
+  font-size: 11px;
+  font-weight: 400;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---- Platform icons ---- */
+
+.month-view__platform-icon {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.month-view__platform-icon--fb {
+  background: #0866FF;
+}
+
+.month-view__platform-icon--ig {
+  background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+}
+
+.month-view__platform-icon--ig svg {
+  width: 8px;
+  height: 8px;
+  fill: #fff;
+}
+
+/* ---- "N more" link ---- */
+
+.month-view__more-link {
+  background: none;
+  border: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: #0038E5;
+  cursor: pointer;
+  padding: 1px 2px;
+  text-align: left;
+  flex-shrink: 0;
+  transition: color 0.12s;
+  font-family: 'Inter', sans-serif;
+}
+
+.month-view__more-link:hover {
+  color: #002bb5;
+  text-decoration: underline;
+}

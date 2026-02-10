@@ -1,0 +1,247 @@
+/* =============================================
+   CampaignSelector – Dropdown for picking a campaign
+   ============================================= */
+
+.campaign-selector {
+  position: relative;
+  width: 100%;
+}
+
+/* ---- Trigger button ---- */
+
+.campaign-selector__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 12px;
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+  outline: none;
+}
+
+.campaign-selector__trigger:hover {
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+.campaign-selector__trigger:focus-visible {
+  border-color: #1877F2;
+  box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.15);
+}
+
+.campaign-selector__trigger--selected {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Trigger content (left side) */
+.campaign-selector__trigger-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.campaign-selector__color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.campaign-selector__label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1A1F26;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.campaign-selector__label--placeholder {
+  color: #9D9DA0;
+  font-weight: 400;
+}
+
+/* Trigger right side (clear + arrow) */
+.campaign-selector__trigger-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.campaign-selector__clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #9D9DA0;
+  padding: 0;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.campaign-selector__clear-btn:hover {
+  background: #F3F3F5;
+  color: #505057;
+}
+
+.campaign-selector__arrow {
+  color: #9D9DA0;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.campaign-selector__arrow--open {
+  transform: rotate(180deg);
+}
+
+/* ---- Dropdown panel ---- */
+
+.campaign-selector__dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  animation: campaignSelectorFadeIn 0.15s ease;
+}
+
+@keyframes campaignSelectorFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- Search ---- */
+
+.campaign-selector__search-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.campaign-selector__search-icon {
+  color: #9D9DA0;
+  flex-shrink: 0;
+}
+
+.campaign-selector__search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1A1F26;
+  background: transparent;
+  padding: 0;
+}
+
+.campaign-selector__search-input::placeholder {
+  color: #B0B0B8;
+}
+
+/* ---- Campaign list ---- */
+
+.campaign-selector__list {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.campaign-selector__empty {
+  padding: 16px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: #9D9DA0;
+}
+
+/* ---- Campaign item ---- */
+
+.campaign-selector__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background-color 0.1s;
+}
+
+.campaign-selector__item:hover {
+  background: #F5F6F8;
+}
+
+.campaign-selector__item--selected {
+  background: #F0F5FF;
+}
+
+.campaign-selector__item--selected:hover {
+  background: #E6EEFA;
+}
+
+.campaign-selector__item-color {
+  width: 10px;
+  height: 28px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.campaign-selector__item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.campaign-selector__item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1A1F26;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.campaign-selector__item-id {
+  font-size: 11px;
+  font-weight: 400;
+  color: #9D9DA0;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.campaign-selector__item-check {
+  color: #1877F2;
+  flex-shrink: 0;
+}

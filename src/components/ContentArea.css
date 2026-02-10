@@ -159,11 +159,112 @@
   overflow: hidden;
 }
 
+.content-area__body--campaigns {
+  padding: 0;
+  overflow: hidden;
+}
+
 .feed-placeholder {
   padding: var(--spacing-xl);
   text-align: center;
   color: var(--color-text-tertiary);
   font-size: 14px;
+}
+
+/* ============================================= */
+/* DELETE CONFIRMATION MODAL                     */
+/* ============================================= */
+
+.delete-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99998;
+  animation: delete-overlay-enter 0.15s ease-out;
+}
+
+@keyframes delete-overlay-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.delete-confirm-modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  width: 400px;
+  max-width: calc(100vw - 32px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
+  animation: delete-modal-enter 0.2s cubic-bezier(0.21, 1.02, 0.73, 1);
+  font-family: 'Inter', sans-serif;
+}
+
+@keyframes delete-modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.delete-confirm-modal__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}
+
+.delete-confirm-modal__description {
+  font-size: 14px;
+  color: #6B7280;
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+}
+
+.delete-confirm-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.delete-confirm-modal__btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+  line-height: 20px;
+}
+
+.delete-confirm-modal__btn--cancel {
+  background: #fff;
+  border: 1px solid #D1D5DB;
+  color: #374151;
+}
+
+.delete-confirm-modal__btn--cancel:hover {
+  background: #F9FAFB;
+  border-color: #9CA3AF;
+}
+
+.delete-confirm-modal__btn--delete {
+  background: #DC2626;
+  border: 1px solid #DC2626;
+  color: #fff;
+}
+
+.delete-confirm-modal__btn--delete:hover {
+  background: #B91C1C;
+  border-color: #B91C1C;
 }
 
 

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ScheduledFeed from './feeds/ScheduledFeed';
 import DraftsFeed from './feeds/DraftsFeed';
+import CampaignsFeed from './feeds/CampaignsFeed';
 import Calendar from './Calendar';
 import FilterPanel from './FilterPanel';
 import BulkActionBar from './BulkActionBar';
@@ -8,7 +9,7 @@ import EmptyState from './EmptyState';
 import CaretDownIcon from '../assets/Caret down.svg';
 import './ContentArea.css';
 
-const ContentArea = ({ activeTab }) => {
+const ContentArea = ({ activeTab, onCreatePost, campaigns, onCampaignsChange, userPosts = [], deletedPostIds = new Set(), onDeletePost, navigateToDate, onNavigateComplete }) => {
   const [viewMode, setViewMode] = useState('default');
   const [viewDropdownOpen, setViewDropdownOpen] = useState(false);
   const [filteredProfileIds, setFilteredProfileIds] = useState([]);
@@ -16,6 +17,7 @@ const ContentArea = ({ activeTab }) => {
   const [selectedPostIds, setSelectedPostIds] = useState(new Set());
   const [totalPostsCount, setTotalPostsCount] = useState(0);
   const [calendarPosts, setCalendarPosts] = useState([]);
+  const [deleteConfirmPostId, setDeleteConfirmPostId] = useState(null);
   const selectAllCallbackRef = useRef(null);
   const viewDropdownRef = useRef(null);
 
@@ -35,7 +37,21 @@ const ContentArea = ({ activeTab }) => {
 
   const handleAction = (actionType, data) => {
     console.log('Action:', actionType, data);
-    // Zde bude logika pro zpracování akcí
+    if (actionType === 'menu-action' && data.action === 'Delete') {
+      setDeleteConfirmPostId(data.postId);
+      return;
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteConfirmPostId && onDeletePost) {
+      onDeletePost(deleteConfirmPostId);
+    }
+    setDeleteConfirmPostId(null);
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmPostId(null);
   };
 
   const handleViewChange = (view) => {
@@ -76,7 +92,18 @@ const ContentArea = ({ activeTab }) => {
       const renderFeed = () => {
         switch (activeTab) {
           case 'Calendar':
-            return <Calendar posts={calendarPosts} />;
+            return (
+              <Calendar
+                posts={calendarPosts}
+                onCreatePost={onCreatePost}
+                campaigns={campaigns}
+                onCampaignsChange={onCampaignsChange}
+                userPosts={userPosts}
+                deletedPostIds={deletedPostIds}
+                navigateToDate={navigateToDate}
+                onNavigateComplete={onNavigateComplete}
+              />
+            );
           case 'Scheduled':
             return (
               <ScheduledFeed 
@@ -89,6 +116,8 @@ const ContentArea = ({ activeTab }) => {
                 onSelectAllCallbackRef={selectAllCallbackRef}
                 onTotalCountChange={setTotalPostsCount}
                 onPostsChange={setCalendarPosts}
+                userPosts={userPosts}
+                deletedPostIds={deletedPostIds}
               />
             );
       case 'Waiting for approval':
@@ -114,6 +143,17 @@ const ContentArea = ({ activeTab }) => {
             onPostSelection={handlePostSelection}
             onSelectAllCallbackRef={selectAllCallbackRef}
             onTotalCountChange={setTotalPostsCount}
+            userPosts={userPosts}
+            deletedPostIds={deletedPostIds}
+          />
+        );
+      case 'Campaigns':
+        return (
+          <CampaignsFeed
+            campaigns={campaigns}
+            onCampaignsChange={onCampaignsChange}
+            userPosts={userPosts}
+            deletedPostIds={deletedPostIds}
           />
         );
       default:
@@ -123,7 +163,7 @@ const ContentArea = ({ activeTab }) => {
 
   return (
     <div className="content-area">
-      {activeTab !== 'Calendar' && (
+      {activeTab !== 'Calendar' && activeTab !== 'Campaigns' && (
         <div className="content-area__header">
           <div className="content-area__header-left">
             <h2 className="content-area__title">
@@ -170,7 +210,7 @@ const ContentArea = ({ activeTab }) => {
                 </div>
               )}
             </div>
-            <button className="content-area__create-button">
+            <button className="content-area__create-button" onClick={onCreatePost}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
@@ -180,10 +220,10 @@ const ContentArea = ({ activeTab }) => {
         </div>
       )}
       <div className="content-area__body-wrapper">
-        <div className={`content-area__body ${viewMode === 'compact' ? 'content-area__body--compact' : ''} ${activeTab === 'Calendar' ? 'content-area__body--calendar' : ''}`}>
+        <div className={`content-area__body ${viewMode === 'compact' ? 'content-area__body--compact' : ''} ${activeTab === 'Calendar' ? 'content-area__body--calendar' : ''} ${activeTab === 'Campaigns' ? 'content-area__body--campaigns' : ''}`}>
           {renderFeed()}
         </div>
-        {activeTab !== 'Calendar' && <FilterPanel onFilterChange={handleFilterChange} />}
+        {activeTab !== 'Calendar' && activeTab !== 'Campaigns' && <FilterPanel onFilterChange={handleFilterChange} />}
       </div>
       <BulkActionBar
         selectedCount={selectedPostIds.size}
@@ -202,6 +242,24 @@ const ContentArea = ({ activeTab }) => {
           handleDeselectAll();
         }}
       />
+
+      {/* Delete confirmation modal */}
+      {deleteConfirmPostId && (
+        <div className="delete-confirm-overlay" onClick={handleCancelDelete}>
+          <div className="delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="delete-confirm-modal__title">Delete post?</h3>
+            <p className="delete-confirm-modal__description">This action cannot be undone.</p>
+            <div className="delete-confirm-modal__actions">
+              <button className="delete-confirm-modal__btn delete-confirm-modal__btn--cancel" onClick={handleCancelDelete}>
+                Cancel
+              </button>
+              <button className="delete-confirm-modal__btn delete-confirm-modal__btn--delete" onClick={handleConfirmDelete}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

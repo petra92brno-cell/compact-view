@@ -280,6 +280,38 @@
   word-break: break-word;
 }
 
+.posts-table__header-campaign,
+.posts-table__cell-campaign {
+  width: 160px;
+  min-width: 120px;
+}
+
+.posts-table__campaign {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.posts-table__campaign-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.posts-table__campaign-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-on-layer-primary);
+  line-height: 18px;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .posts-table__creator {
   display: flex;
   align-items: center;

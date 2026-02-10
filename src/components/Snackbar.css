@@ -1,0 +1,155 @@
+/* ============================================= */
+/* SNACKBAR / TOAST COMPONENT                    */
+/* ============================================= */
+
+.snackbar {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  min-width: 360px;
+  max-width: 560px;
+  z-index: 99999;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.1);
+  animation: snackbar-enter 0.3s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Success variant */
+.snackbar--success {
+  background: #1F2937;
+  color: #FFFFFF;
+}
+
+/* Error variant */
+.snackbar--error {
+  background: #FEF2F2;
+  color: #991B1B;
+  border: 1px solid #FECACA;
+}
+
+/* Exit animation */
+.snackbar--exiting {
+  animation: snackbar-exit 0.25s cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
+}
+
+/* Content (icon + message) */
+.snackbar__content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.snackbar__icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.snackbar--success .snackbar__icon {
+  color: #34D399;
+}
+
+.snackbar--error .snackbar__icon {
+  color: #DC2626;
+}
+
+.snackbar__message {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Actions */
+.snackbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* "Go back" button for error state */
+.snackbar__go-back-btn {
+  background: transparent;
+  border: 1px solid #DC2626;
+  color: #DC2626;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  line-height: 18px;
+  padding: 5px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.snackbar__go-back-btn:hover {
+  background: #DC2626;
+  color: #FFFFFF;
+}
+
+/* Close (X) button */
+.snackbar__close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s;
+}
+
+.snackbar--success .snackbar__close-btn {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.snackbar--success .snackbar__close-btn:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.snackbar--error .snackbar__close-btn {
+  color: #991B1B;
+}
+
+.snackbar--error .snackbar__close-btn:hover {
+  background: rgba(153, 27, 27, 0.08);
+}
+
+/* Enter animation */
+@keyframes snackbar-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Exit animation */
+@keyframes snackbar-exit {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(16px);
+  }
+}

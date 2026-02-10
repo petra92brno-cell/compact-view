@@ -37,6 +37,7 @@ const PostsTable = ({ posts, onAction, selectedPostIds = new Set(), onPostSelect
             <th className="posts-table__header-profile">Profile</th>
             <th className="posts-table__header-media">Media</th>
             <th className="posts-table__header-text">Text</th>
+            <th className="posts-table__header-campaign">Campaign</th>
             <th className="posts-table__header-creator">Creator</th>
           </tr>
         </thead>
@@ -89,6 +90,19 @@ const PostsTable = ({ posts, onAction, selectedPostIds = new Set(), onPostSelect
                 <div className="posts-table__text">
                   {post.text}
                 </div>
+              </td>
+              <td className="posts-table__cell-campaign">
+                {post.campaign && (
+                  <div className="posts-table__campaign">
+                    <span
+                      className="posts-table__campaign-dot"
+                      style={{ backgroundColor: post.campaign.color }}
+                    />
+                    <span className="posts-table__campaign-name">
+                      {post.campaign.name || post.campaign.title}
+                    </span>
+                  </div>
+                )}
               </td>
               <td className="posts-table__cell-creator">
                 {post.creator && (

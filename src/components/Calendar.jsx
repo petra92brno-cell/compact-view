@@ -1,7 +1,29 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import './Calendar.css';
 import CampaignIcon from '../assets/Publisher.svg';
 import NoteIcon from '../assets/Internal note.svg';
+import CampaignDialog from './CampaignDialog';
+import MonthView from './MonthView';
+import Snackbar from './Snackbar';
+import { allPosts as sharedAllPosts, mockNotes as sharedNotes } from '../data/mockData';
+
+// Create Campaign Button Component
+const CreateCampaignButton = ({ date, onOpenDialog }) => {
+  const handleClick = () => {
+    if (onOpenDialog) {
+      onOpenDialog(date);
+    }
+  };
+
+  return (
+    <button
+      className="calendar__create-campaign-btn"
+      onClick={handleClick}
+    >
+      Create campaigns
+    </button>
+  );
+};
 
 // Helper function to parse date from post
 const parsePostDate = (dateString) => {
@@ -155,51 +177,95 @@ const CampaignBar = ({ campaign, weekDates }) => {
 // Note Card Component - tenčí, kompaktnější, s ikonou
 const NoteCard = ({ note }) => {
   return (
-    <div className="calendar-note">
-      <div className="calendar-note__icon-wrapper">
-        <img src={NoteIcon} alt="Note" className="calendar-note__icon" />
-      </div>
+    <div 
+      className="calendar-note"
+      style={{
+        borderColor: note.color || '#F6D84E',
+        borderLeftColor: note.color || '#F6D84E',
+      }}
+    >
       <div className="calendar-note__text">{note.text}</div>
     </div>
   );
 };
 
-// Campaign Bar in Cell - spanuje přes více dnů
-const CampaignBarInCell = ({ campaign, weekDates, startIndex }) => {
-  const startDate = new Date(campaign.startDate);
-  const endDate = new Date(campaign.endDate);
-  const startCol = weekDates.findIndex(d => d.toDateString() === startDate.toDateString());
-  const endCol = weekDates.findIndex(d => d.toDateString() === endDate.toDateString());
+// Campaign Bar in Cell - spanuje přes více dnů podle Figma designu
+const CampaignBarInCell = ({ campaign, weekDates, startCol, span, extendsBeyondWeek = false }) => {
+  if (startCol === -1 || span < 1) return null;
   
-  if (startCol === -1 || endCol === -1) return null;
+  // Vypočítáme šířku na základě počtu sloupců
+  // Každá buňka má padding 6px na každé straně
+  // Border mezi buňkami je 1px
+  const cellWidthPercent = 100 / 7; // 7 dní v týdnu
   
-  const span = endCol - startCol + 1;
-  const cellWidth = 100 / 7; // 7 dní v týdnu
-  const borderWidth = 1; // šířka borderu mezi buňkami
+  // Šířka = procento šířky * počet sloupců - padding z obou stran + border mezi sloupci
+  const widthPercent = span * cellWidthPercent;
+  const paddingAdjustment = 12; // 6px padding na každé straně první buňky
+  const borderWidth = (span - 1) * 1; // border mezi sloupci
+  
+  // Pokud kampaně přesahuje týden, použijeme zelenou barvu a ostrý konec
+  const backgroundColor = extendsBeyondWeek ? '#4CAF50' : (campaign.color || '#2196f3');
+  const className = extendsBeyondWeek 
+    ? 'calendar-campaign-bar calendar-campaign-bar--extends-beyond' 
+    : 'calendar-campaign-bar';
   
   return (
     <div 
-      className="calendar-campaign-inline calendar-campaign-inline--spanning"
+      className={className}
       style={{ 
-        backgroundColor: campaign.color || '#4A90E2',
-        width: `calc(${span * cellWidth}% + ${(span - 1) * borderWidth}px)`,
-        position: 'absolute',
-        left: '2px',
-        top: '2px',
-        zIndex: 1,
+        backgroundColor: backgroundColor,
+        width: `calc(${widthPercent}% - ${paddingAdjustment}px + ${borderWidth}px)`,
+        height: '27px',
       }}
     >
-      <div className="calendar-campaign__content">
-        <div className="calendar-campaign__icon-wrapper">
-          <img src={CampaignIcon} alt="Campaign" className="calendar-campaign__icon" />
-        </div>
-        <div className="calendar-campaign__text">
-          <div className="calendar-campaign__title">{campaign.title}</div>
-          {campaign.description && (
-            <div className="calendar-campaign__description">{campaign.description}</div>
-          )}
-        </div>
+      <div className="calendar-campaign-bar__content">
+        <div className="calendar-campaign-bar__title">{campaign.title}</div>
       </div>
+      {extendsBeyondWeek && (
+        <div className="calendar-campaign-bar__arrow"></div>
+      )}
+    </div>
+  );
+};
+
+// Campaign Bar Absolute - zobrazen jako all-day event přes celou šířku
+const CampaignBarAbsolute = ({ campaign, startCol, span, extendsBeyondWeek = false, rowIndex = 0, onClick }) => {
+  if (startCol === -1 || span < 1) return null;
+  
+  const cellWidthPercent = 100 / 7; // 7 dní v týdnu
+  const leftPercent = startCol * cellWidthPercent;
+  const widthPercent = span * cellWidthPercent;
+  
+  // Pokud kampaně přesahuje týden, použijeme zelenou barvu a ostrý konec
+  const backgroundColor = extendsBeyondWeek ? '#4CAF50' : (campaign.color || '#2196f3');
+  const className = extendsBeyondWeek 
+    ? 'calendar-campaign-bar-absolute calendar-campaign-bar-absolute--extends-beyond' 
+    : 'calendar-campaign-bar-absolute';
+  
+  // Offset pro více kampaní ve stejném období (stacking)
+  const topOffset = rowIndex * 32; // 27px height + 5px margin
+  
+  return (
+    <div 
+      className={className}
+      style={{ 
+        backgroundColor: backgroundColor,
+        left: `calc(${leftPercent}% + 3px)`,
+        width: `calc(${widthPercent}% - 6px)`,
+        top: `${topOffset}px`,
+        height: '27px',
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (onClick) onClick(campaign);
+      }}
+    >
+      <div className="calendar-campaign-bar-absolute__content">
+        <div className="calendar-campaign-bar-absolute__title">{campaign.title}</div>
+      </div>
+      {extendsBeyondWeek && (
+        <div className="calendar-campaign-bar-absolute__arrow"></div>
+      )}
     </div>
   );
 };
@@ -258,13 +324,177 @@ const PlatformBadge = ({ platform }) => {
   return null;
 };
 
-const Calendar = ({ posts = [], campaigns = [], notes = [] }) => {
-  // Set initial date to November 17, 2025 (Monday)
-  const [currentDate, setCurrentDate] = useState(() => {
-    const date = new Date(2025, 10, 17); // November 17, 2025 (month is 0-indexed)
-    return date;
-  });
+const Calendar = ({ posts = [], campaigns = [], notes = [], userPosts = [], deletedPostIds = new Set(), onCreatePost, onCampaignsChange, navigateToDate, onNavigateComplete }) => {
+  // Default to today so the calendar always shows the current week
+  const [currentDate, setCurrentDate] = useState(() => new Date());
   const [viewMode, setViewMode] = useState('week'); // 'month', 'week', 'day'
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+
+  // Use campaigns from props (shared state from App.jsx) with setter from parent
+  const setDynamicCampaigns = onCampaignsChange || (() => {});
+
+  // Snackbar state
+  const [snackbar, setSnackbar] = useState(null); // { type: 'success' | 'error', message, campaignData? }
+
+  // Store last campaign data for error "Go back" flow
+  const [lastCampaignData, setLastCampaignData] = useState(null);
+
+  // Dialog pre-fill data (for error "Go back" flow)
+  const [dialogInitialData, setDialogInitialData] = useState(null);
+
+  // Edit mode state
+  const [dialogMode, setDialogMode] = useState('create'); // 'create' or 'edit'
+  const [editingCampaign, setEditingCampaign] = useState(null);
+
+  const handleOpenDialog = (date) => {
+    setSelectedDate(date);
+    setDialogInitialData(null);
+    setDialogMode('create');
+    setEditingCampaign(null);
+    setIsDialogOpen(true);
+  };
+
+  // Open edit dialog for an existing campaign
+  const handleOpenEditDialog = useCallback((campaign) => {
+    setDialogMode('edit');
+    setEditingCampaign({
+      id: campaign.id,
+      name: campaign.name || campaign.title,
+      color: campaign.color,
+      startDate: new Date(campaign.startDate),
+      endDate: new Date(campaign.endDate),
+      uniqueId: campaign.uniqueId || '',
+      labels: campaign.labels || [],
+      briefContent: campaign.briefContent || '',
+    });
+    setDialogInitialData(null);
+    setSelectedDate(null);
+    setIsDialogOpen(true);
+  }, []);
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setSelectedDate(null);
+    setDialogInitialData(null);
+    setDialogMode('create');
+    setEditingCampaign(null);
+  };
+
+  // Navigate to the week containing a given date
+  const navigateToWeek = useCallback((date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const weekStart = new Date(d);
+    weekStart.setDate(diff);
+    setCurrentDate(weekStart);
+  }, []);
+
+  // Handle campaign creation from dialog
+  const handleCreateCampaign = useCallback((campaignData) => {
+    const newCampaign = {
+      id: Date.now(),
+      title: campaignData.name,
+      name: campaignData.name,
+      description: '',
+      startDate: new Date(campaignData.startDate),
+      endDate: new Date(campaignData.endDate),
+      color: campaignData.color,
+      uniqueId: campaignData.uniqueId || '',
+      labels: campaignData.labels || [],
+      briefContent: campaignData.briefContent || '',
+    };
+
+    // Store data for potential error "Go back" flow
+    setLastCampaignData(campaignData);
+
+    // Add campaign to state
+    setDynamicCampaigns(prev => [...prev, newCampaign]);
+
+    // Close dialog
+    setIsDialogOpen(false);
+    setSelectedDate(null);
+    setDialogInitialData(null);
+
+    // Navigate to the week of the start date
+    navigateToWeek(campaignData.startDate);
+
+    // Show success snackbar
+    setSnackbar({ type: 'success', message: 'Campaign was created successfully.' });
+  }, [navigateToWeek]);
+
+  // Handle campaign save (edit mode)
+  const handleSaveCampaign = useCallback((campaignData) => {
+    setDynamicCampaigns(prev =>
+      prev.map(c =>
+        c.id === campaignData.id
+          ? {
+              ...c,
+              title: campaignData.name,
+              name: campaignData.name,
+              color: campaignData.color,
+              startDate: new Date(campaignData.startDate),
+              endDate: new Date(campaignData.endDate),
+              uniqueId: campaignData.uniqueId,
+              labels: campaignData.labels,
+              briefContent: campaignData.briefContent,
+            }
+          : c
+      )
+    );
+
+    // Close dialog
+    setIsDialogOpen(false);
+    setSelectedDate(null);
+    setDialogInitialData(null);
+    setDialogMode('create');
+    setEditingCampaign(null);
+
+    // Navigate to the week of the start date
+    navigateToWeek(campaignData.startDate);
+
+    // Show success snackbar
+    setSnackbar({ type: 'success', message: 'Campaign was saved successfully.' });
+  }, [navigateToWeek]);
+
+  // Handle campaign delete (edit mode)
+  const handleDeleteCampaign = useCallback((campaignId) => {
+    setDynamicCampaigns(prev => prev.filter(c => c.id !== campaignId));
+
+    // Close dialog
+    setIsDialogOpen(false);
+    setSelectedDate(null);
+    setDialogInitialData(null);
+    setDialogMode('create');
+    setEditingCampaign(null);
+
+    // Show snackbar
+    setSnackbar({ type: 'success', message: 'Campaign was deleted.' });
+  }, []);
+
+  // Handle snackbar dismiss
+  const handleSnackbarDismiss = useCallback(() => {
+    setSnackbar(null);
+  }, []);
+
+  // Handle error snackbar "Go back" — reopen dialog with pre-filled data
+  const handleErrorGoBack = useCallback(() => {
+    setSnackbar(null);
+    if (lastCampaignData) {
+      setDialogInitialData(lastCampaignData);
+      setSelectedDate(lastCampaignData.startDate);
+      setIsDialogOpen(true);
+    }
+  }, [lastCampaignData]);
+
+  // Demo function to trigger error snackbar (can be called from console: window.__showCampaignError())
+  useEffect(() => {
+    window.__showCampaignError = () => {
+      setSnackbar({ type: 'error', message: 'Error occurred. Campaign not created.' });
+    };
+    return () => { delete window.__showCampaignError; };
+  }, []);
 
   // Get start of week (Monday)
   const getWeekStart = (date) => {
@@ -295,40 +525,55 @@ const Calendar = ({ posts = [], campaigns = [], notes = [] }) => {
     return h;
   }, []);
 
-  // Mock data for campaigns and notes
-  const mockCampaigns = useMemo(() => [
-    {
-      id: 1,
-      title: 'Black Friday Campaign',
-      description: 'Promo campaign for social media',
-      startDate: new Date(2025, 10, 17), // Nov 17
-      endDate: new Date(2025, 10, 19), // Nov 19
-      color: '#4A90E2'
-    }
-  ], []);
+  // Notes from shared mock data (dynamic dates)
+  const mockNotes = useMemo(() => sharedNotes, []);
 
-  const mockNotes = useMemo(() => [
-    {
-      id: 1,
-      text: 'Important meeting with marketing team',
-      date: new Date(2025, 10, 18), // Nov 18
-    }
-  ], []);
+  // Use shared data as fallback when no props are provided, merge with user-created posts
+  const displayPosts = useMemo(() => {
+    const basePosts = posts.length > 0 ? posts : sharedAllPosts;
+    return [...basePosts, ...userPosts].filter(p => !deletedPostIds.has(p.id));
+  }, [posts, userPosts, deletedPostIds]);
+  // Campaigns ALWAYS come from props (shared state in App.jsx) — no local fallback
+  const displayCampaigns = campaigns;
 
-  const displayCampaigns = campaigns.length > 0 ? campaigns : mockCampaigns;
+  // Helper: resolve campaign color for a post from the shared campaigns array.
+  // Supports both post.campaign (full object from CreatePost) and post.campaignId (from mock data).
+  // Always reads the latest color from the campaigns array so edits to campaign colors are reflected.
+  const getCampaignColorForPost = (post) => {
+    const id = post.campaignId ?? (post.campaign && post.campaign.id);
+    if (id == null) return null;
+    const found = campaigns.find(c => c.id === id);
+    return found ? found.color : (post.campaign ? post.campaign.color : null);
+  };
   const displayNotes = notes.length > 0 ? notes : mockNotes;
 
-  // Navigate to previous week
-  const goToPreviousWeek = () => {
+  // Navigate to a specific date when navigateToDate prop changes (e.g. after post creation)
+  useEffect(() => {
+    if (navigateToDate) {
+      navigateToWeek(navigateToDate);
+      onNavigateComplete?.();
+    }
+  }, [navigateToDate]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Navigate to previous period (month or week depending on viewMode)
+  const goToPrevious = () => {
     const newDate = new Date(currentDate);
-    newDate.setDate(newDate.getDate() - 7);
+    if (viewMode === 'month') {
+      newDate.setMonth(newDate.getMonth() - 1);
+    } else {
+      newDate.setDate(newDate.getDate() - 7);
+    }
     setCurrentDate(newDate);
   };
 
-  // Navigate to next week
-  const goToNextWeek = () => {
+  // Navigate to next period (month or week depending on viewMode)
+  const goToNext = () => {
     const newDate = new Date(currentDate);
-    newDate.setDate(newDate.getDate() + 7);
+    if (viewMode === 'month') {
+      newDate.setMonth(newDate.getMonth() + 1);
+    } else {
+      newDate.setDate(newDate.getDate() + 7);
+    }
     setCurrentDate(newDate);
   };
 
@@ -337,24 +582,40 @@ const Calendar = ({ posts = [], campaigns = [], notes = [] }) => {
     setCurrentDate(new Date());
   };
 
+  // Format header date label based on view mode
+  const getHeaderDateLabel = () => {
+    if (viewMode === 'month') {
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      return `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+    }
+    return formatDateRange(weekDates[0], weekDates[6]);
+  };
+
+  // Handle clicking a day in MonthView → navigate to that day's week
+  const handleMonthDayClick = useCallback((day) => {
+    navigateToWeek(day);
+    setViewMode('week');
+  }, [navigateToWeek]);
+
   return (
     <div className="calendar">
-      {/* Calendar Header */}
-      <div className="calendar__header">
+      {/* Calendar Header - hidden when dialog is open */}
+      {!isDialogOpen && (
+        <div className="calendar__header">
         <div className="calendar__header-left">
           <button className="calendar__today-button" onClick={goToToday}>
             Today
           </button>
           <div className="calendar__navigation">
-            <button className="calendar__nav-button" onClick={goToPreviousWeek}>
+            <button className="calendar__nav-button" onClick={goToPrevious}>
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d="M11 4L7 9L11 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
             <span className="calendar__date-range">
-              {formatDateRange(weekDates[0], weekDates[6])}
+              {getHeaderDateLabel()}
             </span>
-            <button className="calendar__nav-button" onClick={goToNextWeek}>
+            <button className="calendar__nav-button" onClick={goToNext}>
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d="M7 4L11 9L7 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
@@ -382,11 +643,39 @@ const Calendar = ({ posts = [], campaigns = [], notes = [] }) => {
               Day
             </button>
           </div>
+          <button
+            className="calendar__create-post-button"
+            onClick={() => onCreatePost && onCreatePost()}
+          >
+            + Create post
+          </button>
         </div>
-      </div>
+        </div>
+      )}
 
-      {/* Calendar Grid */}
-      <div className="calendar__grid-wrapper">
+      {/* Campaign Dialog or Calendar Grid */}
+      {isDialogOpen ? (
+        <CampaignDialog 
+          isOpen={isDialogOpen}
+          onClose={handleCloseDialog}
+          selectedDate={selectedDate}
+          onCreateCampaign={handleCreateCampaign}
+          onSaveCampaign={handleSaveCampaign}
+          onDeleteCampaign={handleDeleteCampaign}
+          initialData={dialogInitialData}
+          mode={dialogMode}
+          campaignData={editingCampaign}
+        />
+      ) : viewMode === 'month' ? (
+        <MonthView
+          currentDate={currentDate}
+          posts={displayPosts}
+          campaigns={displayCampaigns}
+          onDayClick={handleMonthDayClick}
+          onOpenEditDialog={handleOpenEditDialog}
+        />
+      ) : (
+        <div className="calendar__grid-wrapper">
         {/* Day Headers Row */}
         <div className="calendar__row calendar__row--header">
           <div className="calendar__time-column"></div>
@@ -406,49 +695,164 @@ const Calendar = ({ posts = [], campaigns = [], notes = [] }) => {
           })}
         </div>
 
-        {/* Notes Rows (2 rows) - první řádek obsahuje kampaně, druhý poznámky */}
-        {[1, 2].map((rowNum) => (
-          <div key={`notes-${rowNum}`} className={`calendar__row calendar__row--notes ${rowNum === 1 ? 'calendar__row--campaigns-row' : ''}`}>
-            <div className="calendar__time-column">
-              <div className="calendar__time-label">Notes</div>
-            </div>
-            {weekDates.map((date, index) => {
-              const dayNotes = getNotesForDay(displayNotes, date);
-              const noteForThisRow = dayNotes[rowNum - 1] || null;
-              
-              // Pro první řádek - kampaně
-              if (rowNum === 1) {
-                const dayCampaigns = getCampaignsForDay(displayCampaigns, date);
-                // Zobraz kampaň jen v prvním dni jejího rozsahu
-                const campaignForThisDay = dayCampaigns.find(campaign => {
-                  const startDate = new Date(campaign.startDate);
-                  return startDate.toDateString() === date.toDateString();
-                });
-                
-                return (
-                  <div key={index} className="calendar__cell calendar__cell--notes calendar__cell--campaign-row">
-                    {campaignForThisDay && (
-                      <CampaignBarInCell 
-                        campaign={campaignForThisDay} 
-                        weekDates={weekDates}
-                        startIndex={index}
-                      />
-                    )}
-                  </div>
-                );
+        {/* Campaigns Container - all campaigns visible at once like Google Calendar */}
+        {(() => {
+          // Group campaigns by overlapping periods and assign row indices
+          const campaignRows = [];
+          const processedCampaigns = displayCampaigns.map((campaign, index) => {
+            const startDate = new Date(campaign.startDate);
+            const endDate = new Date(campaign.endDate);
+            
+            // Normalize dates to start of day for comparison
+            startDate.setHours(0, 0, 0, 0);
+            endDate.setHours(23, 59, 59, 999);
+            
+            const weekStart = new Date(weekDates[0]);
+            weekStart.setHours(0, 0, 0, 0);
+            const weekEnd = new Date(weekDates[weekDates.length - 1]);
+            weekEnd.setHours(23, 59, 59, 999);
+            
+            // Check if campaign overlaps with week
+            if (endDate < weekStart || startDate > weekEnd) {
+              return null;
+            }
+            
+            const startCol = weekDates.findIndex(d => {
+              const dStr = d.toDateString();
+              const sStr = startDate.toDateString();
+              return dStr === sStr;
+            });
+            const endCol = weekDates.findIndex(d => {
+              const dStr = d.toDateString();
+              const eStr = endDate.toDateString();
+              return dStr === eStr;
+            });
+            
+            // Check if campaign extends beyond the week
+            const extendsBeyondWeek = endDate > weekEnd;
+            
+            // Calculate actual columns
+            const actualStartCol = startCol === -1 ? 0 : startCol;
+            const actualEndCol = extendsBeyondWeek ? weekDates.length - 1 : (endCol === -1 ? weekDates.length - 1 : endCol);
+            const span = actualEndCol - actualStartCol + 1;
+            
+            // Find appropriate row (check for overlaps)
+            let rowIndex = 0;
+            for (let row = 0; row < campaignRows.length; row++) {
+              const hasOverlap = campaignRows[row].some(c => {
+                return !(actualEndCol < c.startCol || actualStartCol > c.endCol);
+              });
+              if (!hasOverlap) {
+                rowIndex = row;
+                break;
               }
-              
-              // Pro druhý řádek - poznámky
-              return (
-                <div key={index} className="calendar__cell calendar__cell--notes">
-                  <div className="calendar__cell-content">
-                    {noteForThisRow && <NoteCard note={noteForThisRow} />}
-                  </div>
+              rowIndex = row + 1;
+            }
+            
+            // Add to campaign rows
+            if (!campaignRows[rowIndex]) {
+              campaignRows[rowIndex] = [];
+            }
+            campaignRows[rowIndex].push({ startCol: actualStartCol, endCol: actualEndCol });
+            
+            return {
+              campaign,
+              startCol: actualStartCol,
+              span,
+              extendsBeyondWeek,
+              rowIndex
+            };
+          }).filter(Boolean);
+          
+          const maxRows = campaignRows.length;
+          const contentHeight = Math.max(27, maxRows * 32);
+          const containerHeight = contentHeight + 30; // Add 30px for padding-bottom
+          
+          // Calculate which days have campaigns (for showing/hiding create button)
+          const daysWithCampaigns = new Set();
+          processedCampaigns.forEach(item => {
+            for (let col = item.startCol; col < item.startCol + item.span; col++) {
+              daysWithCampaigns.add(col);
+            }
+          });
+          
+          return (
+            <div className="calendar__campaigns-container">
+              <div className="calendar__row calendar__row--campaigns" style={{ height: `${containerHeight}px` }}>
+                <div className="calendar__time-column">
+                  <div className="calendar__time-label calendar__time-label--campaigns">CAMPAING</div>
                 </div>
-              );
-            })}
-          </div>
-        ))}
+                <div className="calendar__campaigns-grid">
+                  {weekDates.map((date, index) => (
+                    <div 
+                      key={index} 
+                      className="calendar__campaign-cell"
+                    >
+                      <CreateCampaignButton date={date} onOpenDialog={handleOpenDialog} />
+                    </div>
+                  ))}
+                  {/* Render all campaigns as absolutely positioned bars */}
+                  {processedCampaigns.map((item, index) => (
+                    <CampaignBarAbsolute 
+                      key={index}
+                      campaign={item.campaign} 
+                      startCol={item.startCol}
+                      span={item.span}
+                      extendsBeyondWeek={item.extendsBeyondWeek}
+                      rowIndex={item.rowIndex}
+                      onClick={handleOpenEditDialog}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Notes Container - same structure as Campaigns */}
+        {(() => {
+          // Group notes by day column
+          const notesByCol = {};
+          weekDates.forEach((date, colIndex) => {
+            notesByCol[colIndex] = getNotesForDay(displayNotes, date);
+          });
+          
+          // Find the max number of stacked notes in any column
+          const maxNotesInDay = Math.max(1, ...Object.values(notesByCol).map(n => n.length));
+          const noteHeight = 24; // height of one note card
+          const noteGap = 4; // gap between stacked notes
+          const containerHeight = Math.max(28, maxNotesInDay * noteHeight + (maxNotesInDay - 1) * noteGap);
+          
+          return (
+            <div className="calendar__notes-container">
+              <div className="calendar__row calendar__row--notes-grid" style={{ height: `${containerHeight}px` }}>
+                <div className="calendar__time-column">
+                  <div className="calendar__time-label calendar__time-label--notes">NOTES</div>
+                </div>
+                <div className="calendar__notes-grid">
+                  {weekDates.map((date, colIndex) => (
+                    <div key={colIndex} className="calendar__note-cell">
+                      {/* Notes stacked within each day column */}
+                      {notesByCol[colIndex].map((note, noteIndex) => (
+                        <div
+                          key={note.id}
+                          className="calendar-note-absolute"
+                          style={{
+                            top: `${noteIndex * (noteHeight + noteGap)}px`,
+                            borderColor: note.color || '#F6D84E',
+                            borderLeftColor: note.color || '#F6D84E',
+                          }}
+                        >
+                          <div className="calendar-note-absolute__text">{note.text}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Hour Rows */}
         {hours.map((hour) => (
@@ -457,16 +861,23 @@ const Calendar = ({ posts = [], campaigns = [], notes = [] }) => {
               <div className="calendar__time-label">{formatHour(hour)}</div>
             </div>
             {weekDates.map((date, dateIndex) => {
-              const dayPosts = getPostsForTimeSlot(posts, date, hour);
+              const dayPosts = getPostsForTimeSlot(displayPosts, date, hour);
               const isCurrentDay = isToday(date);
+              const isLast = dateIndex === weekDates.length - 1;
               
               return (
                 <div 
                   key={dateIndex} 
-                  className={`calendar__cell ${isCurrentDay ? 'calendar__cell--today' : ''}`}
+                  className={`calendar__cell ${isCurrentDay ? 'calendar__cell--today' : ''} ${isLast ? 'calendar__cell--last' : ''}`}
                 >
-                  {dayPosts.map((post) => (
-                    <div key={post.id} className="calendar-post">
+                  {dayPosts.map((post) => {
+                    const campaignColor = getCampaignColorForPost(post);
+                    return (
+                    <div
+                      key={post.id}
+                      className={`calendar-post${campaignColor ? ' calendar-post--has-campaign' : ''}`}
+                      style={campaignColor ? { borderColor: campaignColor } : undefined}
+                    >
                       <div className="calendar-post__header">
                         <div className="calendar-post__profile">
                           {post.profile.avatar ? (
@@ -510,13 +921,25 @@ const Calendar = ({ posts = [], campaigns = [], notes = [] }) => {
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               );
             })}
           </div>
         ))}
       </div>
+      )}
+
+      {/* Snackbar for campaign creation feedback */}
+      {snackbar && (
+        <Snackbar
+          type={snackbar.type}
+          message={snackbar.message}
+          onDismiss={handleSnackbarDismiss}
+          onGoBack={snackbar.type === 'error' ? handleErrorGoBack : undefined}
+        />
+      )}
     </div>
   );
 };

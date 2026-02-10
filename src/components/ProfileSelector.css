@@ -1,0 +1,422 @@
+/* =============================================
+   ProfileSelector – Input-style container with chips
+   ============================================= */
+
+.profile-selector {
+  position: relative;
+  width: 100%;
+}
+
+/* ---- Input-like container ---- */
+
+.profile-selector__container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 40px;
+  padding: 7px 12px;
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+
+.profile-selector__container:hover {
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+.profile-selector__container--focused {
+  border-color: #1877F2;
+  box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.15);
+}
+
+.profile-selector__container--has-chips {
+  padding: 5px 8px;
+}
+
+.profile-selector__container--error {
+  border-color: #EF4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.12);
+}
+
+.profile-selector__container--error:hover {
+  border-color: #EF4444;
+}
+
+/* Container content (left side) */
+.profile-selector__container-content {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+/* Container right side (clear + arrow) */
+.profile-selector__container-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.profile-selector__clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #9D9DA0;
+  padding: 0;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.profile-selector__clear-btn:hover {
+  background: #F3F3F5;
+  color: #505057;
+}
+
+.profile-selector__arrow {
+  color: #9D9DA0;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.profile-selector__arrow--open {
+  transform: rotate(180deg);
+}
+
+/* ---- Placeholder ---- */
+
+.profile-selector__placeholder {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1877F2;
+  user-select: none;
+  line-height: 1;
+}
+
+.profile-selector__placeholder svg {
+  flex-shrink: 0;
+}
+
+/* ---- Chips area ---- */
+
+.profile-selector__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ---- Individual chip ---- */
+
+.profile-selector__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 6px 3px 3px;
+  background: #F3F4F6;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1A1F26;
+  user-select: none;
+  transition: background-color 0.15s;
+  line-height: 1;
+}
+
+.profile-selector__chip:hover {
+  background: #E5E7EB;
+}
+
+.profile-selector__chip-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.profile-selector__chip-platform-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.profile-selector__chip-name {
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.profile-selector__chip-remove {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.12);
+  color: #6B7280;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 2px;
+  transition: background-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.profile-selector__chip:hover .profile-selector__chip-remove {
+  display: flex;
+}
+
+.profile-selector__chip-remove:hover {
+  background: rgba(0, 0, 0, 0.25);
+  color: #1A1F26;
+}
+
+/* ---- Dropdown ---- */
+
+.profile-selector__dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: profileSelectorFadeIn 0.15s ease;
+}
+
+@keyframes profileSelectorFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- Search ---- */
+
+.profile-selector__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.profile-selector__search svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: #9D9DA0;
+}
+
+.profile-selector__search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  font-family: inherit;
+  color: #1A1F26;
+  line-height: 18px;
+}
+
+.profile-selector__search input::placeholder {
+  color: #9D9DA0;
+}
+
+/* ---- Select All ---- */
+
+.profile-selector__select-all {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.profile-selector__select-all:hover {
+  background: #F9F9FB;
+}
+
+.profile-selector__select-all-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #505057;
+  letter-spacing: 0.3px;
+  line-height: 14px;
+  user-select: none;
+}
+
+/* ---- Checkbox (shared) ---- */
+
+.profile-selector__checkbox {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.profile-selector__checkbox input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.profile-selector__checkbox-box {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #C4C4C8;
+  border-radius: 4px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  pointer-events: none;
+}
+
+.profile-selector__checkbox-box--checked {
+  background: #1877F2;
+  border-color: #1877F2;
+}
+
+.profile-selector__checkbox-box svg {
+  width: 10px;
+  height: 8px;
+}
+
+/* ---- List ---- */
+
+.profile-selector__list {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.profile-selector__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.profile-selector__item:hover {
+  background: #F3F3F5;
+}
+
+.profile-selector__item--selected {
+  background: #F3F3F5;
+}
+
+.profile-selector__item-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.profile-selector__item-platform-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.profile-selector__item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1A1F26;
+  line-height: 18px;
+}
+
+.profile-selector__empty {
+  padding: 20px 14px;
+  text-align: center;
+  font-size: 13px;
+  color: #9D9DA0;
+}
+
+/* ---- Footer ---- */
+
+.profile-selector__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.profile-selector__cancel-btn {
+  padding: 6px 16px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1A1F26;
+  transition: background-color 0.15s;
+}
+
+.profile-selector__cancel-btn:hover {
+  background: #F3F3F5;
+}
+
+.profile-selector__save-btn {
+  padding: 6px 20px;
+  background: #1877F2;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  transition: background-color 0.15s;
+}
+
+.profile-selector__save-btn:hover {
+  background: #166FE5;
+}

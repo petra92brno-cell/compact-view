@@ -71,8 +71,23 @@ const PostCard = ({ post, onAction, viewMode = 'default', isSelected = false, on
     setMenuOpen(false);
   };
 
+  // Resolve campaign: support both full campaign object and campaignId
+  const campaign = post.campaign || null;
+
   return (
     <div className={`post-card post-card--${viewMode}`}>
+      {/* Campaign Banner */}
+      {campaign && (
+        <div
+          className="post-card__campaign-banner"
+          style={{ backgroundColor: campaign.color }}
+        >
+          <span className="post-card__campaign-banner-text">
+            {campaign.name || campaign.title}
+          </span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="post-card__header">
         <div className="post-card__header-left">

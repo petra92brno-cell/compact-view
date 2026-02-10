@@ -152,6 +152,36 @@
   opacity: 0.3;
 }
 
+/* Past dates - grayed out */
+.date-picker__day--past {
+  color: var(--color-on-layer-tertiary, #9D9DA0);
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.date-picker__day--past:hover {
+  background: transparent;
+}
+
+/* Today highlight */
+.date-picker__day--today {
+  position: relative;
+  font-weight: 600;
+  color: #003BEB;
+}
+
+.date-picker__day--today::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #003BEB;
+}
+
 .date-picker__footer {
   display: flex;
   justify-content: flex-end;

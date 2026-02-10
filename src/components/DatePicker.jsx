@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './DatePicker.css';
 
-const DatePicker = ({ isOpen, anchorRef, onClose, onApply, startDate: initialStartDate, endDate: initialEndDate }) => {
+const DatePicker = ({ isOpen, anchorRef, onClose, onApply, startDate: initialStartDate, endDate: initialEndDate, disablePastDates = false }) => {
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const defaultStartDate = initialStartDate || today;
   const defaultEndDate = initialEndDate || today;
   
   const [startDate, setStartDate] = useState(defaultStartDate);
   const [endDate, setEndDate] = useState(defaultEndDate);
   const [startMonth, setStartMonth] = useState(() => new Date(defaultStartDate.getFullYear(), defaultStartDate.getMonth(), 1));
-  const [endMonth, setEndMonth] = useState(() => new Date(defaultEndDate.getFullYear(), defaultEndDate.getMonth(), 1));
+  const [endMonth, setEndMonth] = useState(() => {
+    // End month calendar shows the next month by default
+    const d = new Date(defaultEndDate.getFullYear(), defaultEndDate.getMonth() + 1, 1);
+    return d;
+  });
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const pickerRef = useRef(null);
 
@@ -21,7 +26,8 @@ const DatePicker = ({ isOpen, anchorRef, onClose, onApply, startDate: initialSta
     }
     if (initialEndDate) {
       setEndDate(initialEndDate);
-      setEndMonth(new Date(initialEndDate.getFullYear(), initialEndDate.getMonth(), 1));
+      const nextMonth = new Date(initialEndDate.getFullYear(), initialEndDate.getMonth() + 1, 1);
+      setEndMonth(nextMonth);
     }
   }, [initialStartDate, initialEndDate]);
 
@@ -31,8 +37,8 @@ const DatePicker = ({ isOpen, anchorRef, onClose, onApply, startDate: initialSta
       const anchorRect = anchorRef.current.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
-      const pickerWidth = 700; // Approximate width of date picker
-      const pickerHeight = 500; // Approximate height of date picker
+      const pickerWidth = 620; // Approximate width of date picker
+      const pickerHeight = 420; // Approximate height of date picker
 
       let left = anchorRect.left;
       let top = anchorRect.bottom + 8;
@@ -99,21 +105,42 @@ const DatePicker = ({ isOpen, anchorRef, onClose, onApply, startDate: initialSta
     }
   };
 
+  // Check if a date is in the past (before today)
+  const isDateInPast = (date) => {
+    if (!disablePastDates) return false;
+    const todayNormalized = new Date();
+    todayNormalized.setHours(0, 0, 0, 0);
+    const dateNormalized = new Date(date);
+    dateNormalized.setHours(0, 0, 0, 0);
+    return dateNormalized < todayNormalized;
+  };
+
+  // Check if a specific day in a month is today
+  const isDayToday = (month, day) => {
+    const todayNormalized = new Date();
+    todayNormalized.setHours(0, 0, 0, 0);
+    const date = new Date(month.getFullYear(), month.getMonth(), day);
+    date.setHours(0, 0, 0, 0);
+    return date.getTime() === todayNormalized.getTime();
+  };
+
   const selectDate = (calendar, day) => {
+    const month = calendar === 'start' ? startMonth : endMonth;
+    const newDate = new Date(month.getFullYear(), month.getMonth(), day);
+
+    // Prevent selecting past dates
+    if (isDateInPast(newDate)) return;
+
     if (calendar === 'start') {
-      const newDate = new Date(startMonth.getFullYear(), startMonth.getMonth(), day);
       setStartDate(newDate);
       // If end date is before start date, update end date
       if (newDate > endDate) {
         setEndDate(newDate);
-        setEndMonth(new Date(newDate.getFullYear(), newDate.getMonth(), 1));
       }
     } else {
-      const newDate = new Date(endMonth.getFullYear(), endMonth.getMonth(), day);
       // If start date is after end date, update start date
       if (newDate < startDate) {
         setStartDate(newDate);
-        setStartMonth(new Date(newDate.getFullYear(), newDate.getMonth(), 1));
       }
       setEndDate(newDate);
     }
@@ -129,10 +156,31 @@ const DatePicker = ({ isOpen, anchorRef, onClose, onApply, startDate: initialSta
     );
   };
 
+  const isStartDateSelected = (month, day) => {
+    return (
+      day === startDate.getDate() &&
+      month.getMonth() === startDate.getMonth() &&
+      month.getFullYear() === startDate.getFullYear()
+    );
+  };
+
+  const isEndDateSelected = (month, day) => {
+    return (
+      day === endDate.getDate() &&
+      month.getMonth() === endDate.getMonth() &&
+      month.getFullYear() === endDate.getFullYear()
+    );
+  };
+
   const isDateInRange = (calendar, day) => {
-    const date = new Date(calendar === 'start' ? startMonth : endMonth);
-    date.setDate(day);
-    return date >= startDate && date <= endDate;
+    const month = calendar === 'start' ? startMonth : endMonth;
+    const date = new Date(month.getFullYear(), month.getMonth(), day);
+    date.setHours(0, 0, 0, 0);
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(0, 0, 0, 0);
+    return date > start && date < end;
   };
 
   const renderCalendar = (calendar) => {
@@ -154,15 +202,18 @@ const DatePicker = ({ isOpen, anchorRef, onClose, onApply, startDate: initialSta
 
     // Current month days
     for (let day = 1; day <= daysInMonth; day++) {
+      const dateForDay = new Date(month.getFullYear(), month.getMonth(), day);
       days.push({
         day,
         isCurrentMonth: true,
-        isPrevMonth: false
+        isPrevMonth: false,
+        isPast: isDateInPast(dateForDay),
+        isToday: isDayToday(month, day),
       });
     }
 
     // Next month days
-    const totalCells = 42; // 6 weeks * 7 days
+    const totalCells = Math.ceil(days.length / 7) * 7;
     const remainingDays = totalCells - days.length;
     for (let day = 1; day <= remainingDays; day++) {
       days.push({
@@ -206,8 +257,10 @@ const DatePicker = ({ isOpen, anchorRef, onClose, onApply, startDate: initialSta
         </div>
         <div className="date-picker__days">
           {days.map((item, index) => {
-            const isSelected = item.isCurrentMonth && isDateSelected(calendar, item.day);
+            const isSelected = item.isCurrentMonth && (isStartDateSelected(month, item.day) || isEndDateSelected(month, item.day));
             const inRange = item.isCurrentMonth && isDateInRange(calendar, item.day);
+            const isPastDay = item.isCurrentMonth && item.isPast;
+            const isTodayDay = item.isCurrentMonth && item.isToday;
             
             return (
               <button
@@ -216,9 +269,11 @@ const DatePicker = ({ isOpen, anchorRef, onClose, onApply, startDate: initialSta
                   !item.isCurrentMonth ? 'date-picker__day--other-month' : ''
                 } ${isSelected ? 'date-picker__day--selected' : ''} ${
                   inRange && !isSelected ? 'date-picker__day--in-range' : ''
+                } ${isPastDay ? 'date-picker__day--past' : ''} ${
+                  isTodayDay && !isSelected ? 'date-picker__day--today' : ''
                 }`}
-                onClick={() => item.isCurrentMonth && selectDate(calendar, item.day)}
-                disabled={!item.isCurrentMonth}
+                onClick={() => item.isCurrentMonth && !isPastDay && selectDate(calendar, item.day)}
+                disabled={!item.isCurrentMonth || isPastDay}
               >
                 {item.day}
               </button>
@@ -274,4 +329,3 @@ const DatePicker = ({ isOpen, anchorRef, onClose, onApply, startDate: initialSta
 };
 
 export default DatePicker;
-

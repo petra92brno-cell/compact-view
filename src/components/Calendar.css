@@ -126,6 +126,26 @@
   font-weight: 600;
 }
 
+/* Create Post Button */
+.calendar__create-post-button {
+  background: #4338CA;
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--border-radius-medium);
+  padding: var(--space-2) var(--space-4);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.calendar__create-post-button:hover {
+  background: #3730A3;
+}
+
 /* Grid Wrapper */
 .calendar__grid-wrapper {
   flex: 1;
@@ -150,12 +170,7 @@
   min-height: 36px;
 }
 
-.calendar__row--notes {
-  position: sticky;
-  top: 36px;
-  background: var(--color-layer-level-1);
-  z-index: 9;
-}
+/* (notes row styles moved to notes-container section below) */
 
 .calendar__row--campaigns-row {
   position: relative;
@@ -169,10 +184,16 @@
   border-right: 1px solid var(--color-border-secondary);
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 10px;
   background: var(--color-layer-level-1);
   flex-shrink: 0;
+}
+
+.calendar__row--campaigns .calendar__time-column,
+.calendar__row--notes .calendar__time-column {
+  justify-content: flex-start;
+  padding-left: 10px;
 }
 
 .calendar__time-label {
@@ -185,6 +206,24 @@
   white-space: nowrap;
 }
 
+.calendar__time-label--campaigns {
+  font-weight: 700;
+  color: #2F3744;
+  text-align: left;
+  padding-left: 0;
+}
+
+.calendar__time-label--notes {
+  font-weight: 700;
+  color: #2F3744;
+  text-align: left;
+  padding-left: 0;
+}
+
+.calendar__time-label--notes-first {
+  /* Only show NOTES label on first notes row */
+}
+
 /* Day Header Cell */
 .calendar__day-header-cell {
   flex: 1;
@@ -194,6 +233,7 @@
   flex-direction: column;
   gap: 1px;
   background: var(--color-layer-level-1);
+  box-sizing: border-box;
 }
 
 .calendar__day-header-cell--today {
@@ -245,6 +285,10 @@
   box-sizing: border-box;
 }
 
+.calendar__cell--last {
+  border-right: none !important;
+}
+
 .calendar__cell--today {
   background: rgba(213, 239, 255, 0.3);
 }
@@ -266,6 +310,11 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+.calendar-post--has-campaign {
+  border: 1px solid transparent; /* color set via inline style */
+  border-top-width: 4px; /* thicker top highlight strip */
 }
 
 .calendar-post:hover {
@@ -467,20 +516,250 @@
   object-fit: cover;
 }
 
-/* Campaign Bar - TENČÍ, spanuje přes více dnů */
-.calendar-campaign-inline {
-  background: #4A90E2;
+/* Campaigns Container */
+.calendar__campaigns-container {
+  position: relative;
+  border-bottom: 1px solid var(--color-border-secondary);
+  background: var(--color-layer-level-1);
+}
+
+/* Campaign Bar Row - samostatný řádek pro kampaně podle Figma */
+.calendar__row--campaigns {
+  min-height: 27px;
+  position: sticky;
+  top: 36px;
+  background: var(--color-layer-level-1);
+  z-index: 9;
+  display: flex;
+  align-items: stretch;
+  padding: 0;
+  border-bottom: none;
+}
+
+.calendar__campaigns-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  position: relative;
+  min-height: 27px;
+  padding: 0;
+}
+
+.calendar__campaign-cell {
+  border-right: 1px solid var(--color-border-secondary);
+  position: relative;
+  padding: 0;
+  padding-bottom: 30px;
+  box-sizing: border-box;
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: auto; /* Changed to auto to allow hover */
+}
+
+.calendar__campaign-cell:last-child {
+  border-right: none;
+}
+
+.calendar__day-header-cell:last-child {
+  border-right: none;
+}
+
+/* Create Campaign Button - shown on cell hover */
+.calendar__campaign-cell:hover .calendar__create-campaign-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.calendar__create-campaign-btn {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.05); /* #000000 with 5% opacity */
+  color: #24242B;
+  border: none;
   border-radius: 4px;
-  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 400;
+  font-family: 'Inter', sans-serif;
+  line-height: 16px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 150ms ease;
+  pointer-events: none;
+  z-index: 3; /* Above campaign bars but below cell borders */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+  width: fit-content;
+}
+
+.calendar__create-campaign-btn:hover {
+  background: rgba(0, 0, 0, 0.1); /* Higher opacity on hover (~10%) */
+}
+
+/* Campaign Bar Absolute - all-day event style like Google Calendar */
+.calendar-campaign-bar-absolute {
+  background: #2196f3; /* color-chart-blue podle Figma */
+  border-radius: var(--border-radius-medium, 6px);
+  padding: 0 var(--space-2, 6px);
+  height: 27px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0px 0px 0.5px 0px rgba(0, 0, 0, 0.3), 0px 1px 3px 0px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+  box-sizing: border-box;
+  overflow: visible;
+  position: absolute;
+  z-index: 3;
+  margin: 0 3px;
+  top: 0;
+}
+
+.calendar-campaign-bar-absolute:hover {
+  opacity: 0.9;
+  box-shadow: 0px 1px 4px 0px rgba(0, 0, 0, 0.25);
+}
+
+.calendar-campaign-bar-absolute__content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  position: relative;
+  z-index: 3;
+}
+
+.calendar-campaign-bar-absolute__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f9f9fa; /* color-on-layer-inverse podle Figma */
+  line-height: 18px;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Campaign bar that extends beyond the week - green with sharp end */
+.calendar-campaign-bar-absolute--extends-beyond {
+  background: #4CAF50;
+  border-radius: var(--border-radius-medium, 6px) 0 0 var(--border-radius-medium, 6px);
+  padding-right: 0;
+  position: absolute;
+  overflow: visible;
+}
+
+.calendar-campaign-bar-absolute--extends-beyond .calendar-campaign-bar-absolute__arrow {
+  position: absolute;
+  right: -13px;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-top: 13.5px solid transparent;
+  border-bottom: 13.5px solid transparent;
+  border-left: 13px solid #4CAF50;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Campaign Bar - podle Figma designu - horizontální pruh (legacy) */
+.calendar-campaign-bar {
+  background: #2196f3; /* color-chart-blue podle Figma */
+  border-radius: var(--border-radius-medium, 6px);
+  padding: 0 var(--space-2, 6px);
+  height: 27px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0px 0px 0.5px 0px rgba(0, 0, 0, 0.3), 0px 1px 3px 0px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+  box-sizing: border-box;
+  overflow: visible;
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  z-index: 1;
+}
+
+/* Campaign bar that extends beyond the week - green with sharp end */
+.calendar-campaign-bar--extends-beyond {
+  background: #4CAF50;
+  border-radius: var(--border-radius-medium, 6px) 0 0 var(--border-radius-medium, 6px);
+  padding-right: 0;
+  position: relative;
+  overflow: visible;
+}
+
+.calendar-campaign-bar--extends-beyond .calendar-campaign-bar__arrow {
+  position: absolute;
+  right: -13px;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-top: 13.5px solid transparent;
+  border-bottom: 13.5px solid transparent;
+  border-left: 13px solid #4CAF50;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.calendar__cell--campaigns {
+  overflow: visible !important;
+}
+
+.calendar-campaign-bar:hover {
+  opacity: 0.9;
+  box-shadow: 0px 1px 4px 0px rgba(0, 0, 0, 0.25);
+}
+
+.calendar-campaign-bar__content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  position: relative;
+  z-index: 3;
+}
+
+.calendar-campaign-bar__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f9f9fa; /* color-on-layer-inverse podle Figma */
+  line-height: 18px;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Legacy styles pro kompatibilitu */
+.calendar-campaign-inline {
+  background: #003beb;
+  border-radius: var(--border-radius-medium, 6px);
+  padding: 0 var(--space-2, 6px);
+  height: 27px;
   margin: 0;
   display: flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  border-left: 3px solid rgba(255, 255, 255, 0.3);
-  min-height: 24px;
+  box-shadow: 0px 0px 0.5px 0px rgba(0, 0, 0, 0.3), 0px 1px 3px 0px rgba(0, 0, 0, 0.2);
   pointer-events: auto;
   box-sizing: border-box;
   z-index: 1;
@@ -491,9 +770,8 @@
 }
 
 .calendar-campaign-inline:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-  opacity: 0.95;
+  opacity: 0.9;
+  box-shadow: 0px 1px 4px 0px rgba(0, 0, 0, 0.25);
 }
 
 .calendar-campaign__content,
@@ -559,78 +837,67 @@
   margin-top: 1px;
 }
 
-/* Notes Rows - obsahuje kampaně i poznámky */
-.calendar__row--notes {
-  min-height: 28px; /* Tenčí */
+/* Notes Container - mirrors Campaigns Container */
+.calendar__notes-container {
   position: relative;
+  border-bottom: 1px solid var(--color-border-secondary);
+  background: var(--color-layer-level-1);
 }
 
-.calendar__row--notes:first-of-type {
-  position: relative;
-}
-
-.calendar__cell--notes {
+.calendar__row--notes-grid {
   min-height: 28px;
-  padding: 2px 4px;
-  position: relative;
-}
-
-.calendar__cell--campaign-row {
-  padding: 2px;
-  overflow: visible;
-}
-
-.calendar__cell-content {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 100%;
-  position: relative;
+  align-items: stretch;
+  padding: 0;
+  border-bottom: none;
 }
 
-/* Note Card - TENČÍ, kompaktnější */
-.calendar-note {
-  background: #FFF9E6;
+.calendar__notes-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  position: relative;
+  min-height: 28px;
+  padding: 0;
+}
+
+.calendar__note-cell {
+  border-right: 1px solid var(--color-border-secondary);
+  position: relative;
+  padding: 2px 3px;
+  box-sizing: border-box;
+  grid-row: 1;
+}
+
+.calendar__note-cell:last-child {
+  border-right: none;
+}
+
+/* Note Card - absolutely positioned within day column */
+.calendar-note-absolute {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  background: #FFFFFF;
   border: 1px solid #F6D84E;
   border-left: 2px solid #F6D84E;
   border-radius: 4px;
   padding: 3px 6px;
   display: flex;
   align-items: center;
-  gap: 6px;
   cursor: pointer;
   transition: all 0.2s;
-  width: 100%;
   box-sizing: border-box;
-  min-height: 20px;
+  height: 24px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  z-index: 1;
 }
 
-.calendar-note:hover {
+.calendar-note-absolute:hover {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transform: translateX(1px);
-  border-left-color: #F4C430;
 }
 
-.calendar-note__icon-wrapper {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(246, 216, 78, 0.15);
-  border-radius: 3px;
-  padding: 1px;
-}
-
-.calendar-note__icon {
-  width: 12px;
-  height: 12px;
-  opacity: 0.8;
-}
-
-.calendar-note__text {
+.calendar-note-absolute__text {
   font-size: 10px;
   font-weight: 500;
   color: #2F3744;
@@ -642,4 +909,3 @@
   flex: 1;
   min-width: 0;
 }
-

@@ -76,6 +76,23 @@ const MiddleSidebar = ({ activeTab, onTabChange }) => {
           </button>
             <button className="w-full text-left px-3 py-2.5 rounded-lg mb-0.5 transition-all duration-200 text-[13px] leading-[18px] text-[#2F3744] hover:bg-[#F3F3F5] font-normal">Preset templates</button>
         </div>
+
+        <div className="border-t border-[#D7D8D9] my-2"></div>
+
+        {/* Campaigns */}
+        <div className="px-2 pt-1 pb-3">
+          <button
+            onClick={() => onTabChange('Campaigns')}
+            className={`w-full text-left px-3 py-2.5 rounded-lg mb-0.5 transition-all duration-200 text-[13px] leading-[18px] flex items-center gap-2 ${
+              activeTab === 'Campaigns'
+                ? 'bg-[#F3F3F5] text-[#1A1F26] font-bold'
+                : 'text-[#2F3744] hover:bg-[#F3F3F5] font-normal'
+            }`}
+          >
+            <span>Campaigns</span>
+            <span className="inline-flex items-center px-1.5 py-0 rounded-full text-[9px] font-bold leading-[16px] tracking-wide uppercase" style={{ background: '#DBEAFE', color: '#2563EB' }}>NEW</span>
+          </button>
+        </div>
       </div>
     </div>
   );
