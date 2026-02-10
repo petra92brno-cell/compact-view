@@ -556,6 +556,10 @@
   pointer-events: auto; /* Changed to auto to allow hover */
 }
 
+.calendar__campaign-cell--today {
+  background: rgba(213, 239, 255, 0.3);
+}
+
 .calendar__campaign-cell:last-child {
   border-right: none;
 }
@@ -867,6 +871,10 @@
   padding: 2px 3px;
   box-sizing: border-box;
   grid-row: 1;
+}
+
+.calendar__note-cell--today {
+  background: rgba(213, 239, 255, 0.3);
 }
 
 .calendar__note-cell:last-child {

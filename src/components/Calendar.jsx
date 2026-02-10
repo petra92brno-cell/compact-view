@@ -783,14 +783,17 @@ const Calendar = ({ posts = [], campaigns = [], notes = [], userPosts = [], dele
                   <div className="calendar__time-label calendar__time-label--campaigns">CAMPAING</div>
                 </div>
                 <div className="calendar__campaigns-grid">
-                  {weekDates.map((date, index) => (
+                  {weekDates.map((date, index) => {
+                    const isCurrentDay = isToday(date);
+                    return (
                     <div 
                       key={index} 
-                      className="calendar__campaign-cell"
+                      className={`calendar__campaign-cell ${isCurrentDay ? 'calendar__campaign-cell--today' : ''}`}
                     >
                       <CreateCampaignButton date={date} onOpenDialog={handleOpenDialog} />
                     </div>
-                  ))}
+                    );
+                  })}
                   {/* Render all campaigns as absolutely positioned bars */}
                   {processedCampaigns.map((item, index) => (
                     <CampaignBarAbsolute 
@@ -830,8 +833,10 @@ const Calendar = ({ posts = [], campaigns = [], notes = [], userPosts = [], dele
                   <div className="calendar__time-label calendar__time-label--notes">NOTES</div>
                 </div>
                 <div className="calendar__notes-grid">
-                  {weekDates.map((date, colIndex) => (
-                    <div key={colIndex} className="calendar__note-cell">
+                  {weekDates.map((date, colIndex) => {
+                    const isCurrentDay = isToday(date);
+                    return (
+                    <div key={colIndex} className={`calendar__note-cell ${isCurrentDay ? 'calendar__note-cell--today' : ''}`}>
                       {/* Notes stacked within each day column */}
                       {notesByCol[colIndex].map((note, noteIndex) => (
                         <div
@@ -847,7 +852,8 @@ const Calendar = ({ posts = [], campaigns = [], notes = [], userPosts = [], dele
                         </div>
                       ))}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>

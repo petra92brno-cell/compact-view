@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import './MonthView.css';
 
 // Helper: parse post date string "Feb 3, 2025 10:20" → Date
@@ -54,6 +54,43 @@ const MonthView = ({
   onOpenEditDialog,
 }) => {
   const today = new Date();
+
+  // Popover state for "X more" expansion
+  const [expandedDay, setExpandedDay] = useState(null); // dateKey string or null
+  const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
+  const popoverRef = useRef(null);
+
+  const handleMoreClick = useCallback((e, dayKey, dayPosts, day) => {
+    e.stopPropagation();
+    if (expandedDay === dayKey) {
+      setExpandedDay(null);
+      return;
+    }
+    // Position the popover relative to the button
+    const rect = e.currentTarget.getBoundingClientRect();
+    const scrollParent = e.currentTarget.closest('.month-view__body');
+    const parentRect = scrollParent
+      ? scrollParent.getBoundingClientRect()
+      : document.body.getBoundingClientRect();
+
+    let top = rect.bottom - parentRect.top + (scrollParent ? scrollParent.scrollTop : 0) + 4;
+    let left = rect.left - parentRect.left;
+
+    setPopoverPos({ top, left });
+    setExpandedDay(dayKey);
+  }, [expandedDay]);
+
+  // Close popover on outside click
+  useEffect(() => {
+    if (!expandedDay) return;
+    const handleClick = (e) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target)) {
+        setExpandedDay(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [expandedDay]);
 
   // Current month & year from currentDate
   const year = currentDate.getFullYear();
@@ -288,10 +325,7 @@ const MonthView = ({
                     {overflowCount > 0 && (
                       <button
                         className="month-view__more-link"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (onDayClick) onDayClick(day);
-                        }}
+                        onClick={(e) => handleMoreClick(e, dayKey, dayPosts, day)}
                       >
                         {overflowCount} more
                       </button>
@@ -302,6 +336,40 @@ const MonthView = ({
             </div>
           );
         })}
+
+        {/* Popover for expanded day posts */}
+        {expandedDay && postsByDay[expandedDay] && (
+          <div
+            ref={popoverRef}
+            className="month-view__more-popover"
+            style={{ top: popoverPos.top, left: popoverPos.left }}
+          >
+            <div className="month-view__more-popover-header">
+              <span className="month-view__more-popover-title">
+                All posts
+              </span>
+              <button
+                className="month-view__more-popover-close"
+                onClick={() => setExpandedDay(null)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="month-view__more-popover-list">
+              {postsByDay[expandedDay].map(post => (
+                <div key={post.id} className="month-view__more-popover-item">
+                  <span className="month-view__post-time">
+                    {formatTime(post.date)}
+                  </span>
+                  <PlatformIcon platform={post.profile?.platform} />
+                  <span className="month-view__post-text">
+                    {post.text || 'Untitled post'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

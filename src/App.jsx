@@ -81,6 +81,22 @@ function App() {
     setNavigateToDate(null);
   }, []);
 
+  // Detect unsaved changes for beforeunload warning
+  const hasUnsavedChanges = userPosts.length > 0 || deletedPostIds.size > 0 || campaigns !== initialCampaigns;
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+
   // Make Resources text red in footer
   useEffect(() => {
     const styleResourcesText = () => {

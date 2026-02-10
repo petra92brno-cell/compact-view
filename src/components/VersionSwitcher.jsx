@@ -11,24 +11,29 @@ const VERSIONS = [
 const VersionSwitcher = ({ children }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeVersion, setActiveVersion] = useState('v1');
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const dropdownRef = useRef(null);
 
   // Close on Escape key
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        setIsOpen(false);
+        if (showResetConfirm) {
+          setShowResetConfirm(false);
+        } else {
+          setIsOpen(false);
+        }
       }
     };
 
-    if (isOpen) {
+    if (isOpen || showResetConfirm) {
       document.addEventListener('keydown', handleKeyDown);
     }
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen]);
+  }, [isOpen, showResetConfirm]);
 
   const handleToggle = (e) => {
     e.stopPropagation();
@@ -43,6 +48,19 @@ const VersionSwitcher = ({ children }) => {
 
   const handleOverlayClick = () => {
     setIsOpen(false);
+  };
+
+  const handleResetClick = () => {
+    setIsOpen(false);
+    setShowResetConfirm(true);
+  };
+
+  const handleResetConfirm = () => {
+    window.location.reload();
+  };
+
+  const handleResetCancel = () => {
+    setShowResetConfirm(false);
   };
 
   return (
@@ -107,9 +125,36 @@ const VersionSwitcher = ({ children }) => {
                 </svg>
                 About this prototype
               </button>
+              <button className="version-switcher__footer-link" onClick={handleResetClick}>
+                <svg className="version-switcher__footer-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2.5 2.5v4h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M2.8 9.5a5.5 5.5 0 1 0 1.1-4L2.5 6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Reset to default state
+              </button>
             </div>
           </div>
         </>
+      )}
+
+      {/* Reset confirmation modal */}
+      {showResetConfirm && (
+        <div className="version-switcher__confirm-overlay" onClick={handleResetCancel}>
+          <div className="version-switcher__confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="version-switcher__confirm-title">Reset prototype?</h3>
+            <p className="version-switcher__confirm-description">
+              This will remove all changes and return to the default state with mock data.
+            </p>
+            <div className="version-switcher__confirm-actions">
+              <button className="version-switcher__confirm-cancel" onClick={handleResetCancel}>
+                Cancel
+              </button>
+              <button className="version-switcher__confirm-reset" onClick={handleResetConfirm}>
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

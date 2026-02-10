@@ -261,3 +261,84 @@
   color: #002bb5;
   text-decoration: underline;
 }
+
+/* ---- "More" popover ---- */
+
+.month-view__more-popover {
+  position: absolute;
+  z-index: 100;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  min-width: 220px;
+  max-width: 300px;
+  max-height: 260px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: month-view__popover-fade-in 0.15s ease;
+}
+
+@keyframes month-view__popover-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.month-view__more-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 6px;
+  border-bottom: 1px solid #eee;
+  flex-shrink: 0;
+}
+
+.month-view__more-popover-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2f3744;
+}
+
+.month-view__more-popover-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0 2px;
+  transition: color 0.12s;
+}
+
+.month-view__more-popover-close:hover {
+  color: #374151;
+}
+
+.month-view__more-popover-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 8px 8px;
+  overflow-y: auto;
+}
+
+.month-view__more-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 4px;
+  border-radius: 4px;
+  min-height: 22px;
+  cursor: pointer;
+  transition: background-color 0.12s;
+}
+
+.month-view__more-popover-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
