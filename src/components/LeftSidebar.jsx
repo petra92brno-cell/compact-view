@@ -1,5 +1,6 @@
 import React from 'react';
 import './LeftSidebar.css';
+import VersionSwitcher from './VersionSwitcher';
 
 // Import new icons
 import iconHome from '../assets/Home.svg';
@@ -94,17 +95,19 @@ const LeftSidebar = () => {
             <img src={iconSettings} alt="Settings" className="left-sidebar__item-icon" />
           </button>
 
-          {/* User Profile */}
-          <button className="left-sidebar__item">
-            <div className="left-sidebar__profile">
-              <div className="left-sidebar__avatar">
-                <img src={imgAvatar} alt="User" className="left-sidebar__avatar-img" />
+          {/* User Profile with Version Switcher */}
+          <VersionSwitcher>
+            <button className="left-sidebar__item">
+              <div className="left-sidebar__profile">
+                <div className="left-sidebar__avatar">
+                  <img src={imgAvatar} alt="User" className="left-sidebar__avatar-img" />
+                </div>
+                <div className="left-sidebar__notification">
+                  <span className="left-sidebar__notification-text">12</span>
+                </div>
               </div>
-              <div className="left-sidebar__notification">
-                <span className="left-sidebar__notification-text">12</span>
-              </div>
-            </div>
-          </button>
+            </button>
+          </VersionSwitcher>
         </div>
       </div>
     </div>

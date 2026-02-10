@@ -70,11 +70,22 @@ const CampaignsFeed = ({ campaigns = [], onCampaignsChange, userPosts = [], dele
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState(null);
 
-  // Close filter dropdown on outside click
+  // Action menu state (three-dot menu)
+  const [actionMenuOpenId, setActionMenuOpenId] = useState(null);
+  const actionMenuRef = useRef(null);
+
+  // Delete confirmation dialog state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingCampaign, setDeletingCampaign] = useState(null);
+
+  // Close filter dropdown and action menu on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (filterRef.current && !filterRef.current.contains(e.target)) {
         setFilterDropdownOpen(false);
+      }
+      if (actionMenuRef.current && !actionMenuRef.current.contains(e.target)) {
+        setActionMenuOpenId(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -244,9 +255,81 @@ const CampaignsFeed = ({ campaigns = [], onCampaignsChange, userPosts = [], dele
     setEditingCampaign(null);
   }, [onCampaignsChange]);
 
+  // Toggle three-dot action menu
+  const handleToggleActionMenu = useCallback((e, campaignId) => {
+    e.stopPropagation();
+    setActionMenuOpenId((prev) => (prev === campaignId ? null : campaignId));
+  }, []);
+
+  // Duplicate campaign — opens dialog with cloned data and "(Copy)" suffix
+  const handleDuplicateCampaign = useCallback((campaign) => {
+    setActionMenuOpenId(null);
+    const duplicatedData = {
+      id: undefined, // new campaign, no id yet
+      name: `${campaign.name} (Copy)`,
+      color: campaign.color,
+      startDate: new Date(campaign.startDate),
+      endDate: new Date(campaign.endDate),
+      uniqueId: '', // must be unique, so clear it for user to fill
+      labels: campaign.labels ? [...campaign.labels] : [],
+      briefContent: campaign.briefContent || '',
+    };
+    setEditingCampaign(duplicatedData);
+    setIsDialogOpen(true);
+  }, []);
+
+  // Request remove — show confirmation dialog
+  const handleRequestRemove = useCallback((e, campaign) => {
+    e.stopPropagation();
+    setActionMenuOpenId(null);
+    setDeletingCampaign(campaign);
+    setShowDeleteConfirm(true);
+  }, []);
+
+  // Confirm remove
+  const handleConfirmRemove = useCallback(() => {
+    if (deletingCampaign && onCampaignsChange) {
+      onCampaignsChange((prev) => prev.filter((c) => c.id !== deletingCampaign.id));
+    }
+    setShowDeleteConfirm(false);
+    setDeletingCampaign(null);
+  }, [deletingCampaign, onCampaignsChange]);
+
+  // Cancel remove
+  const handleCancelRemove = useCallback(() => {
+    setShowDeleteConfirm(false);
+    setDeletingCampaign(null);
+  }, []);
+
   const allSelected =
     filteredCampaigns.length > 0 &&
     filteredCampaigns.every((c) => selectedIds.has(c.id));
+
+  // Handle creating a duplicated campaign
+  const handleCreateDuplicate = useCallback((campaignData) => {
+    if (onCampaignsChange) {
+      const newId = `campaign-${Date.now()}`;
+      onCampaignsChange((prev) => [
+        ...prev,
+        {
+          id: newId,
+          name: campaignData.name,
+          title: campaignData.name,
+          color: campaignData.color,
+          startDate: campaignData.startDate,
+          endDate: campaignData.endDate,
+          uniqueId: campaignData.uniqueId,
+          labels: campaignData.labels || [],
+          briefContent: campaignData.briefContent || '',
+        },
+      ]);
+    }
+    setIsDialogOpen(false);
+    setEditingCampaign(null);
+  }, [onCampaignsChange]);
+
+  // Determine if current dialog is for duplicating (no id = new campaign from duplication)
+  const isDuplicateMode = isDialogOpen && editingCampaign && !editingCampaign.id;
 
   // When the dialog is open, render it full-screen instead of the table
   if (isDialogOpen && editingCampaign) {
@@ -255,10 +338,12 @@ const CampaignsFeed = ({ campaigns = [], onCampaignsChange, userPosts = [], dele
         isOpen={true}
         onClose={handleCloseDialog}
         selectedDate={editingCampaign.startDate}
-        onSaveCampaign={handleSaveCampaign}
-        onDeleteCampaign={handleDeleteCampaign}
-        mode="edit"
-        campaignData={editingCampaign}
+        onSaveCampaign={isDuplicateMode ? undefined : handleSaveCampaign}
+        onCreateCampaign={isDuplicateMode ? handleCreateDuplicate : undefined}
+        onDeleteCampaign={isDuplicateMode ? undefined : handleDeleteCampaign}
+        mode={isDuplicateMode ? 'create' : 'edit'}
+        campaignData={isDuplicateMode ? undefined : editingCampaign}
+        initialData={isDuplicateMode ? editingCampaign : undefined}
       />
     );
   }
@@ -428,7 +513,12 @@ const CampaignsFeed = ({ campaigns = [], onCampaignsChange, userPosts = [], dele
                   key={campaign.id}
                   className={`campaigns-feed__row ${selectedIds.has(campaign.id) ? 'campaigns-feed__row--selected' : ''}`}
                   onMouseEnter={() => setHoveredRowId(campaign.id)}
-                  onMouseLeave={() => setHoveredRowId(null)}
+                  onMouseLeave={() => {
+                    // Don't hide row actions if the action menu is open for this row
+                    if (actionMenuOpenId !== campaign.id) {
+                      setHoveredRowId(null);
+                    }
+                  }}
                   onClick={() => handleOpenCampaign(campaign)}
                 >
                   <td className="campaigns-feed__td-checkbox" onClick={(e) => e.stopPropagation()}>
@@ -448,14 +538,50 @@ const CampaignsFeed = ({ campaigns = [], onCampaignsChange, userPosts = [], dele
                       <span className="campaigns-feed__campaign-link">
                         {campaign.name}
                       </span>
-                      {hoveredRowId === campaign.id && (
-                        <button className="campaigns-feed__row-menu" aria-label="More actions" onClick={(e) => e.stopPropagation()}>
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <circle cx="8" cy="4" r="1.25" fill="currentColor" />
-                            <circle cx="8" cy="8" r="1.25" fill="currentColor" />
-                            <circle cx="8" cy="12" r="1.25" fill="currentColor" />
-                          </svg>
-                        </button>
+                      {(hoveredRowId === campaign.id || actionMenuOpenId === campaign.id) && (
+                        <div className="campaigns-feed__action-menu-wrapper" ref={actionMenuOpenId === campaign.id ? actionMenuRef : undefined}>
+                          <button
+                            className={`campaigns-feed__row-menu ${actionMenuOpenId === campaign.id ? 'campaigns-feed__row-menu--active' : ''}`}
+                            aria-label="More actions"
+                            onClick={(e) => handleToggleActionMenu(e, campaign.id)}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                              <circle cx="8" cy="4" r="1.25" fill="currentColor" />
+                              <circle cx="8" cy="8" r="1.25" fill="currentColor" />
+                              <circle cx="8" cy="12" r="1.25" fill="currentColor" />
+                            </svg>
+                          </button>
+                          {actionMenuOpenId === campaign.id && (
+                            <div className="campaigns-feed__action-dropdown">
+                              <button
+                                className="campaigns-feed__action-item"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDuplicateCampaign(campaign);
+                                }}
+                              >
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                  <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+                                  <path d="M10.5 5.5V3.5C10.5 2.67 9.83 2 9 2H3.5C2.67 2 2 2.67 2 3.5V9C2 9.83 2.67 10.5 3.5 10.5H5.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                                </svg>
+                                <span>Duplicate</span>
+                              </button>
+                              <button
+                                className="campaigns-feed__action-item campaigns-feed__action-item--danger"
+                                onClick={(e) => handleRequestRemove(e, campaign)}
+                              >
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                  <path d="M2.5 4.5H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                                  <path d="M5.5 4.5V3C5.5 2.45 5.95 2 6.5 2H9.5C10.05 2 10.5 2.45 10.5 3V4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                                  <path d="M4 4.5L4.5 13C4.5 13.55 4.95 14 5.5 14H10.5C11.05 14 11.5 13.55 11.5 13L12 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                                  <path d="M7 7V11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                                  <path d="M9 7V11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                                </svg>
+                                <span>Remove</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </td>
@@ -487,6 +613,41 @@ const CampaignsFeed = ({ campaigns = [], onCampaignsChange, userPosts = [], dele
           </tbody>
         </table>
       </div>
+
+      {/* Delete confirmation dialog */}
+      {showDeleteConfirm && deletingCampaign && (
+        <div className="campaigns-feed__confirm-overlay" onClick={handleCancelRemove}>
+          <div className="campaigns-feed__confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="campaigns-feed__confirm-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M3.5 6.5H20.5" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M8 6.5V4.5C8 3.4 8.9 2.5 10 2.5H14C15.1 2.5 16 3.4 16 4.5V6.5" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M5.5 6.5L6.5 19.5C6.5 20.6 7.4 21.5 8.5 21.5H15.5C16.6 21.5 17.5 20.6 17.5 19.5L18.5 6.5" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M10 10.5V17" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M14 10.5V17" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <h2 className="campaigns-feed__confirm-title">Remove campaign?</h2>
+            <p className="campaigns-feed__confirm-description">
+              Are you sure you want to remove <strong>{deletingCampaign.name}</strong>? This action cannot be undone and all associated data will be permanently deleted.
+            </p>
+            <div className="campaigns-feed__confirm-actions">
+              <button
+                className="campaigns-feed__confirm-btn campaigns-feed__confirm-btn--secondary"
+                onClick={handleCancelRemove}
+              >
+                Cancel
+              </button>
+              <button
+                className="campaigns-feed__confirm-btn campaigns-feed__confirm-btn--danger"
+                onClick={handleConfirmRemove}
+              >
+                Remove campaign
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

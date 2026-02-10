@@ -411,11 +411,17 @@
   text-decoration: underline;
 }
 
-.campaigns-feed__row-menu {
+/* Action menu wrapper (three-dot + dropdown) */
+
+.campaigns-feed__action-menu-wrapper {
   position: absolute;
   right: 0;
   top: 50%;
   transform: translateY(-50%);
+  z-index: 15;
+}
+
+.campaigns-feed__row-menu {
   width: 28px;
   height: 28px;
   display: flex;
@@ -426,12 +432,198 @@
   border-radius: var(--border-radius-medium);
   cursor: pointer;
   color: var(--color-on-layer-secondary);
-  transition: background-color 0.15s;
+  transition: background-color 0.15s, border-color 0.15s;
   flex-shrink: 0;
 }
 
 .campaigns-feed__row-menu:hover {
   background: var(--color-layer-level-2);
+}
+
+.campaigns-feed__row-menu--active {
+  background: var(--color-layer-level-2);
+  border-color: #9CA3AF;
+}
+
+/* Action dropdown */
+
+.campaigns-feed__action-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: var(--color-layer-level-1);
+  border: 1px solid var(--color-border-primary);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
+  z-index: 30;
+  min-width: 180px;
+  padding: 6px;
+  animation: campaignsFeed-dropdownIn 0.15s ease-out;
+}
+
+@keyframes campaignsFeed-dropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.campaigns-feed__action-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 400;
+  font-family: 'Inter', sans-serif;
+  color: var(--color-text-primary);
+  border-radius: 8px;
+  transition: background-color 0.12s;
+  line-height: 20px;
+}
+
+.campaigns-feed__action-item:hover {
+  background: var(--color-layer-level-2);
+}
+
+.campaigns-feed__action-item svg {
+  flex-shrink: 0;
+  color: var(--color-on-layer-secondary);
+}
+
+.campaigns-feed__action-item--danger:hover {
+  background: #FEF2F2;
+}
+
+.campaigns-feed__action-item--danger:hover svg {
+  color: #DC2626;
+}
+
+.campaigns-feed__action-item--danger:hover span {
+  color: #DC2626;
+}
+
+/* Delete confirmation overlay */
+
+.campaigns-feed__confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: campaignsFeed-overlayIn 0.2s ease-out;
+}
+
+@keyframes campaignsFeed-overlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.campaigns-feed__confirm-modal {
+  background: var(--color-layer-level-1);
+  border-radius: 16px;
+  padding: 28px 28px 24px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: campaignsFeed-modalIn 0.2s ease-out;
+  text-align: center;
+}
+
+@keyframes campaignsFeed-modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.campaigns-feed__confirm-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #FEF2F2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.campaigns-feed__confirm-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 8px;
+  font-family: 'Inter', sans-serif;
+  line-height: 26px;
+}
+
+.campaigns-feed__confirm-description {
+  font-size: 14px;
+  color: var(--color-on-layer-secondary);
+  margin: 0 0 24px;
+  line-height: 21px;
+  font-family: 'Inter', sans-serif;
+}
+
+.campaigns-feed__confirm-description strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.campaigns-feed__confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.campaigns-feed__confirm-btn {
+  flex: 1;
+  padding: 10px 20px;
+  border-radius: var(--border-radius-medium);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background-color 0.15s, box-shadow 0.15s;
+  line-height: 20px;
+  border: none;
+}
+
+.campaigns-feed__confirm-btn--secondary {
+  background: var(--color-layer-level-2);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-primary);
+}
+
+.campaigns-feed__confirm-btn--secondary:hover {
+  background: #E5E7EB;
+}
+
+.campaigns-feed__confirm-btn--danger {
+  background: #DC2626;
+  color: #fff;
+}
+
+.campaigns-feed__confirm-btn--danger:hover {
+  background: #B91C1C;
 }
 
 /* Status badges */
