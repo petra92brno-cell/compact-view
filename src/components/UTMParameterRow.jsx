@@ -9,12 +9,24 @@ const UTM_VARIABLES = [
   { id: 'social-channel-id', label: 'Social channel ID' },
 ];
 
-const UTMParameterRow = ({ label, mode, value, enabled, onModeChange, onValueChange, onToggleEnabled }) => {
+const UTMParameterRow = ({ label, mode, value, enabled, onModeChange, onValueChange, onToggleEnabled, hasError, onInputBlur }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isInsertVarOpen, setIsInsertVarOpen] = useState(false);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
   const insertVarRef = useRef(null);
+
+  // Auto-focus the input when mode changes to 'custom'
+  useEffect(() => {
+    if (mode === 'custom' && enabled && inputRef.current) {
+      const timer = setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [mode, enabled]);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -171,17 +183,32 @@ const UTMParameterRow = ({ label, mode, value, enabled, onModeChange, onValueCha
           )}
         </div>
         {showInput && (
-          <input
-            ref={inputRef}
-            type="text"
-            className="utm-param-row__input"
-            value={value}
-            onChange={(e) => onValueChange(e.target.value)}
-            placeholder="Enter value..."
-            disabled={!enabled}
-          />
+          <div className={`utm-param-row__input-wrapper ${hasError ? 'utm-param-row__input-wrapper--error' : ''}`}>
+            <input
+              ref={inputRef}
+              type="text"
+              className="utm-param-row__input"
+              value={value}
+              onChange={(e) => onValueChange(e.target.value)}
+              onBlur={onInputBlur}
+              placeholder="Enter value..."
+              disabled={!enabled}
+            />
+            {hasError && (
+              <span className="utm-param-row__input-error-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M8.866 1.5a1 1 0 00-1.732 0L.536 13A1 1 0 001.402 14.5h13.196A1 1 0 0015.464 13L8.866 1.5z" fill="#DC2626"/>
+                  <path d="M8 6v3" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                  <circle cx="8" cy="11" r="0.75" fill="white"/>
+                </svg>
+              </span>
+            )}
+          </div>
         )}
       </div>
+      {hasError && (
+        <p className="utm-param-row__error-message">Enter a custom value or insert a variable</p>
+      )}
     </div>
   );
 };

@@ -24,3 +24,4 @@ dist-ssr
 *.sw?
 ~/import-certs.sh
 .vercel
+.env

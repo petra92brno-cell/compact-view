@@ -105,15 +105,24 @@ const CampaignDialog = ({
   const [utmSourceMode, setUtmSourceMode] = useState('social-channel-id');
   const [utmSourceValue, setUtmSourceValue] = useState('');
   const [utmSourceEnabled, setUtmSourceEnabled] = useState(true);
+  const [utmSourceTouched, setUtmSourceTouched] = useState(false);
   const [utmMediumMode, setUtmMediumMode] = useState('custom');
   const [utmMediumValue, setUtmMediumValue] = useState('social');
   const [utmMediumEnabled, setUtmMediumEnabled] = useState(true);
+  const [utmMediumTouched, setUtmMediumTouched] = useState(false);
   const [utmCampaignMode, setUtmCampaignMode] = useState('campaign-id');
   const [utmCampaignValue, setUtmCampaignValue] = useState('');
   const [utmCampaignEnabled, setUtmCampaignEnabled] = useState(true);
+  const [utmCampaignTouched, setUtmCampaignTouched] = useState(false);
   const [utmContentMode, setUtmContentMode] = useState('none');
   const [utmContentValue, setUtmContentValue] = useState('');
   const [utmContentEnabled, setUtmContentEnabled] = useState(true);
+  const [utmContentTouched, setUtmContentTouched] = useState(false);
+
+  // UTM validation warning modal state
+  const [showUtmWarningModal, setShowUtmWarningModal] = useState(false);
+  const [incompleteUtmParams, setIncompleteUtmParams] = useState([]);
+  const [pendingSaveAction, setPendingSaveAction] = useState(null);
 
 
   // Content labels state
@@ -210,6 +219,49 @@ const CampaignDialog = ({
       setCampaignLabelActive(false);
     }
   };
+
+  // UTM custom value validation — inline errors (red border + message on blur)
+  const utmSourceError = utmSourceMode === 'custom' && utmSourceEnabled && utmSourceValue.trim() === '' && utmSourceTouched;
+  const utmMediumError = utmMediumMode === 'custom' && utmMediumEnabled && utmMediumValue.trim() === '' && utmMediumTouched;
+  const utmCampaignError = utmCampaignMode === 'custom' && utmCampaignEnabled && utmCampaignValue.trim() === '' && utmCampaignTouched;
+  const utmContentError = utmContentMode === 'custom' && utmContentEnabled && utmContentValue.trim() === '' && utmContentTouched;
+
+  // UTM mode change handlers — reset touched state on mode change
+  const handleUtmSourceModeChange = (newMode) => { setUtmSourceMode(newMode); setUtmSourceTouched(false); };
+  const handleUtmMediumModeChange = (newMode) => { setUtmMediumMode(newMode); setUtmMediumTouched(false); };
+  const handleUtmCampaignModeChange = (newMode) => { setUtmCampaignMode(newMode); setUtmCampaignTouched(false); };
+  const handleUtmContentModeChange = (newMode) => { setUtmContentMode(newMode); setUtmContentTouched(false); };
+
+  // UTM value change handlers — clear error on typing / variable insert
+  const handleUtmSourceValueChange = (newValue) => { setUtmSourceValue(newValue); if (utmSourceTouched) setUtmSourceTouched(false); };
+  const handleUtmMediumValueChange = (newValue) => { setUtmMediumValue(newValue); if (utmMediumTouched) setUtmMediumTouched(false); };
+  const handleUtmCampaignValueChange = (newValue) => { setUtmCampaignValue(newValue); if (utmCampaignTouched) setUtmCampaignTouched(false); };
+  const handleUtmContentValueChange = (newValue) => { setUtmContentValue(newValue); if (utmContentTouched) setUtmContentTouched(false); };
+
+  // UTM blur handlers — show error when input is blurred while empty
+  const handleUtmSourceBlur = () => { if (utmSourceMode === 'custom' && utmSourceValue.trim() === '') setUtmSourceTouched(true); };
+  const handleUtmMediumBlur = () => { if (utmMediumMode === 'custom' && utmMediumValue.trim() === '') setUtmMediumTouched(true); };
+  const handleUtmCampaignBlur = () => { if (utmCampaignMode === 'custom' && utmCampaignValue.trim() === '') setUtmCampaignTouched(true); };
+  const handleUtmContentBlur = () => { if (utmContentMode === 'custom' && utmContentValue.trim() === '') setUtmContentTouched(true); };
+
+  // Get list of UTM parameters that are incomplete (custom value selected + empty)
+  const getIncompleteUtmParams = useCallback(() => {
+    if (!linkTrackingEnabled) return [];
+    const params = [];
+    if (utmSourceEnabled && (utmSourceMode === 'none' || (utmSourceMode === 'custom' && utmSourceValue.trim() === ''))) {
+      params.push('Source (utm_source)');
+    }
+    if (utmMediumEnabled && (utmMediumMode === 'none' || (utmMediumMode === 'custom' && utmMediumValue.trim() === ''))) {
+      params.push('Medium (utm_medium)');
+    }
+    if (utmCampaignEnabled && (utmCampaignMode === 'none' || (utmCampaignMode === 'custom' && utmCampaignValue.trim() === ''))) {
+      params.push('Campaign name (utm_campaign)');
+    }
+    if (utmContentEnabled && (utmContentMode === 'none' || (utmContentMode === 'custom' && utmContentValue.trim() === ''))) {
+      params.push('Content (utm_content)');
+    }
+    return params;
+  }, [linkTrackingEnabled, utmSourceMode, utmSourceEnabled, utmSourceValue, utmMediumMode, utmMediumEnabled, utmMediumValue, utmCampaignMode, utmCampaignEnabled, utmCampaignValue, utmContentMode, utmContentEnabled, utmContentValue]);
 
   // Check if form is valid — both Name AND Unique ID must have valid values
   const isFormValid =
@@ -357,6 +409,19 @@ const CampaignDialog = ({
     );
   }, [isEditMode, name, color, startDate, endDate, selectedLabels, briefContent, uniqueId, isBriefEmpty, linkTrackingEnabled, utmSourceMode, utmSourceValue, utmMediumMode, utmMediumValue, utmCampaignMode, utmContentMode, utmContentValue]);
 
+  // Check if UTM Builder is ON but ALL parameter toggles are OFF
+  const allUtmParamsOff = linkTrackingEnabled && !utmSourceEnabled && !utmMediumEnabled && !utmCampaignEnabled && !utmContentEnabled;
+
+  // Check if any enabled UTM params are incomplete (none mode or custom with empty value)
+  const hasIncompleteUtmParams = useMemo(() => {
+    if (!linkTrackingEnabled) return false;
+    const isIncomplete = (enabled, mode, value) => enabled && (mode === 'none' || (mode === 'custom' && value.trim() === ''));
+    return isIncomplete(utmSourceEnabled, utmSourceMode, utmSourceValue) ||
+           isIncomplete(utmMediumEnabled, utmMediumMode, utmMediumValue) ||
+           isIncomplete(utmCampaignEnabled, utmCampaignMode, utmCampaignValue) ||
+           isIncomplete(utmContentEnabled, utmContentMode, utmContentValue);
+  }, [linkTrackingEnabled, utmSourceEnabled, utmSourceMode, utmSourceValue, utmMediumEnabled, utmMediumMode, utmMediumValue, utmCampaignEnabled, utmCampaignMode, utmCampaignValue, utmContentEnabled, utmContentMode, utmContentValue]);
+
   // Build UTM link preview data from param states (respecting enabled toggles)
   const utmPreviewData = useMemo(() => {
     const baseUrl = 'https://www.emplifi.io/';
@@ -421,6 +486,63 @@ const CampaignDialog = ({
     onClose();
   };
 
+  // Build campaign data payload
+  const buildCampaignPayload = () => ({
+    ...(isEditMode ? { id: campaignData?.id } : {}),
+    name: name.trim(),
+    color,
+    startDate,
+    endDate,
+    uniqueId: uniqueId.trim(),
+    labels: selectedLabels,
+    briefContent,
+    linkTrackingEnabled,
+    utmSourceMode, utmSourceValue,
+    utmMediumMode, utmMediumValue,
+    utmCampaignMode, utmCampaignValue,
+    utmContentMode, utmContentValue,
+  });
+
+  // Perform save (edit mode)
+  const performSave = () => {
+    if (onSaveCampaign) {
+      onSaveCampaign(buildCampaignPayload());
+    }
+  };
+
+  // Perform create
+  const performCreate = () => {
+    if (onCreateCampaign) {
+      onCreateCampaign(buildCampaignPayload());
+    }
+  };
+
+  // Handle save/create click — check for incomplete UTM params first
+  const handleSaveOrCreateClick = (action) => {
+    if (!isFormValid) return;
+    const incomplete = getIncompleteUtmParams();
+    if (incomplete.length > 0) {
+      // Mark all incomplete params as touched so inline errors show when user goes back
+      if (utmSourceMode === 'custom' && utmSourceEnabled && utmSourceValue.trim() === '') setUtmSourceTouched(true);
+      if (utmMediumMode === 'custom' && utmMediumEnabled && utmMediumValue.trim() === '') setUtmMediumTouched(true);
+      if (utmCampaignMode === 'custom' && utmCampaignEnabled && utmCampaignValue.trim() === '') setUtmCampaignTouched(true);
+      if (utmContentMode === 'custom' && utmContentEnabled && utmContentValue.trim() === '') setUtmContentTouched(true);
+      setIncompleteUtmParams(incomplete);
+      setPendingSaveAction(action);
+      setShowUtmWarningModal(true);
+      return;
+    }
+    if (action === 'save') performSave();
+    else performCreate();
+  };
+
+  // Handle "Save anyway" in warning modal
+  const handleUtmWarningSaveAnyway = () => {
+    setShowUtmWarningModal(false);
+    if (pendingSaveAction === 'save') performSave();
+    else performCreate();
+  };
+
   // Computed values
   const headerTitle = name.trim() ? name : '(Untitled campaign)';
   const headerSubtitle = formatDateRange(startDate, endDate);
@@ -482,25 +604,7 @@ const CampaignDialog = ({
               <button
                 className={`campaign-dialog__create-btn ${!isFormValid ? 'campaign-dialog__create-btn--disabled' : ''}`}
                 disabled={!isFormValid}
-                onClick={() => {
-                  if (isFormValid && onSaveCampaign) {
-                    onSaveCampaign({
-                      id: campaignData?.id,
-                      name: name.trim(),
-                      color,
-                      startDate,
-                      endDate,
-                      uniqueId: uniqueId.trim(),
-                      labels: selectedLabels,
-                      briefContent,
-                      linkTrackingEnabled,
-                      utmSourceMode, utmSourceValue,
-                      utmMediumMode, utmMediumValue,
-                      utmCampaignMode, utmCampaignValue,
-                      utmContentMode, utmContentValue,
-                    });
-                  }
-                }}
+                onClick={() => handleSaveOrCreateClick('save')}
               >
                 Save and close
               </button>
@@ -509,24 +613,7 @@ const CampaignDialog = ({
                 <button
                   className={`campaign-dialog__create-btn ${!isFormValid ? 'campaign-dialog__create-btn--disabled' : ''}`}
                   disabled={!isFormValid}
-                  onClick={() => {
-                    if (isFormValid && onCreateCampaign) {
-                      onCreateCampaign({
-                        name: name.trim(),
-                        color,
-                        startDate,
-                        endDate,
-                        uniqueId: uniqueId.trim(),
-                        labels: selectedLabels,
-                        briefContent,
-                        linkTrackingEnabled,
-                        utmSourceMode, utmSourceValue,
-                        utmMediumMode, utmMediumValue,
-                        utmCampaignMode, utmCampaignValue,
-                        utmContentMode, utmContentValue,
-                      });
-                    }
-                  }}
+                  onClick={() => handleSaveOrCreateClick('create')}
                 >
                   Create campaign
                 </button>
@@ -816,49 +903,88 @@ const CampaignDialog = ({
                       mode={utmSourceMode}
                       value={utmSourceValue}
                       enabled={utmSourceEnabled}
-                      onModeChange={setUtmSourceMode}
-                      onValueChange={setUtmSourceValue}
+                      onModeChange={handleUtmSourceModeChange}
+                      onValueChange={handleUtmSourceValueChange}
                       onToggleEnabled={() => setUtmSourceEnabled(prev => !prev)}
+                      hasError={utmSourceError}
+                      onInputBlur={handleUtmSourceBlur}
                     />
                     <UTMParameterRow
                       label="Medium (utm_medium)"
                       mode={utmMediumMode}
                       value={utmMediumValue}
                       enabled={utmMediumEnabled}
-                      onModeChange={setUtmMediumMode}
-                      onValueChange={setUtmMediumValue}
+                      onModeChange={handleUtmMediumModeChange}
+                      onValueChange={handleUtmMediumValueChange}
                       onToggleEnabled={() => setUtmMediumEnabled(prev => !prev)}
+                      hasError={utmMediumError}
+                      onInputBlur={handleUtmMediumBlur}
                     />
                     <UTMParameterRow
                       label="Campaign name (utm_campaign)"
                       mode={utmCampaignMode}
                       value={utmCampaignValue}
                       enabled={utmCampaignEnabled}
-                      onModeChange={setUtmCampaignMode}
-                      onValueChange={setUtmCampaignValue}
+                      onModeChange={handleUtmCampaignModeChange}
+                      onValueChange={handleUtmCampaignValueChange}
                       onToggleEnabled={() => setUtmCampaignEnabled(prev => !prev)}
+                      hasError={utmCampaignError}
+                      onInputBlur={handleUtmCampaignBlur}
                     />
                     <UTMParameterRow
                       label="Content (utm_content)"
                       mode={utmContentMode}
                       value={utmContentValue}
                       enabled={utmContentEnabled}
-                      onModeChange={setUtmContentMode}
-                      onValueChange={setUtmContentValue}
+                      onModeChange={handleUtmContentModeChange}
+                      onValueChange={handleUtmContentValueChange}
                       onToggleEnabled={() => setUtmContentEnabled(prev => !prev)}
+                      hasError={utmContentError}
+                      onInputBlur={handleUtmContentBlur}
                     />
                   </div>
 
                   {/* Link preview (bottom) */}
-                  <div className="utm-link-preview">
+                  <div className={`utm-link-preview ${(allUtmParamsOff || hasIncompleteUtmParams) ? 'utm-link-preview--warning' : ''}`}>
                     <div className="utm-link-preview__header">
-                      <span className="utm-link-preview__dot" />
-                      <span className="utm-link-preview__title">Link preview</span>
+                      {(allUtmParamsOff || hasIncompleteUtmParams) ? (
+                        <svg className="utm-link-preview__warning-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <path d="M8.866 1.5a1 1 0 00-1.732 0L.536 13A1 1 0 001.402 14.5h13.196A1 1 0 0015.464 13L8.866 1.5z" fill="#F59E0B"/>
+                          <path d="M8 6v3" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                          <circle cx="8" cy="11" r="0.75" fill="white"/>
+                        </svg>
+                      ) : (
+                        <span className="utm-link-preview__dot" />
+                      )}
+                      <span className="utm-link-preview__title">
+                        Link preview with variables
+                      </span>
                     </div>
-                    <div className="utm-link-preview__url-box">
-                      {utmPreviewData.resolvedUrl}
-                    </div>
+                    {(allUtmParamsOff || hasIncompleteUtmParams) && (
+                      <p className="utm-link-preview__warning-text">
+                        Link preview will be shown here once you input the required parameter.
+                      </p>
+                    )}
+                    {!allUtmParamsOff && (
+                      <div className="utm-link-preview__url-box">
+                        {utmPreviewData.resolvedUrl}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Warning: UTM enabled but all parameters OFF */}
+                  {allUtmParamsOff && (
+                    <div className="utm-all-off-warning">
+                      <svg className="utm-all-off-warning__icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M8.866 1.5a1 1 0 00-1.732 0L.536 13A1 1 0 001.402 14.5h13.196A1 1 0 0015.464 13L8.866 1.5z" fill="#F59E0B"/>
+                        <path d="M8 6v3" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                        <circle cx="8" cy="11" r="0.75" fill="white"/>
+                      </svg>
+                      <span className="utm-all-off-warning__text">
+                        UTM Builder is enabled but all parameters are turned off. Enable at least one parameter or turn off UTM Builder.
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1051,6 +1177,46 @@ const CampaignDialog = ({
                 }}
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* UTM incomplete parameters warning modal */}
+      {showUtmWarningModal && (
+        <div className="campaign-dialog__confirm-overlay" onClick={() => setShowUtmWarningModal(false)}>
+          <div className="campaign-dialog__confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="campaign-dialog__confirm-close-btn"
+              onClick={() => setShowUtmWarningModal(false)}
+              aria-label="Close"
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            <h2 className="campaign-dialog__confirm-title">Some UTM parameters are incomplete</h2>
+            <p className="campaign-dialog__confirm-description">
+              The following parameters are enabled but have no value and won't be included in the tracking URL:
+            </p>
+            <ul className="campaign-dialog__confirm-list">
+              {incompleteUtmParams.map((param, i) => (
+                <li key={i}>{param}</li>
+              ))}
+            </ul>
+            <div className="campaign-dialog__confirm-actions">
+              <button
+                className="campaign-dialog__confirm-btn campaign-dialog__confirm-btn--secondary"
+                onClick={() => setShowUtmWarningModal(false)}
+              >
+                Go back and fix
+              </button>
+              <button
+                className="campaign-dialog__confirm-btn campaign-dialog__confirm-btn--primary"
+                onClick={handleUtmWarningSaveAnyway}
+              >
+                Save anyway
               </button>
             </div>
           </div>
