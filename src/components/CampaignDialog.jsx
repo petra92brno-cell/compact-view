@@ -3,6 +3,7 @@ import './CampaignDialog.css';
 import CampaignColorPicker from './CampaignColorPicker';
 import DatePicker from './DatePicker';
 import ContentLabelsDropdown from './ContentLabelsDropdown';
+import UTMParameterRow from './UTMParameterRow';
 
 const MAX_NAME_LENGTH = 100;
 const DEFAULT_COLOR = '#4338CA';
@@ -100,30 +101,20 @@ const CampaignDialog = ({
     getInitialValue('linkTrackingEnabled', 'linkTrackingEnabled', false)
   );
 
-  // UTM Preset Builder state (new design: mode + custom value per param)
-  const [utmSourceMode, setUtmSourceMode] = useState('custom');
+  // UTM Preset Builder state (mode + custom value + enabled per param)
+  const [utmSourceMode, setUtmSourceMode] = useState('social-channel-id');
   const [utmSourceValue, setUtmSourceValue] = useState('');
+  const [utmSourceEnabled, setUtmSourceEnabled] = useState(true);
   const [utmMediumMode, setUtmMediumMode] = useState('custom');
-  const [utmMediumValue, setUtmMediumValue] = useState('');
+  const [utmMediumValue, setUtmMediumValue] = useState('social');
+  const [utmMediumEnabled, setUtmMediumEnabled] = useState(true);
   const [utmCampaignMode, setUtmCampaignMode] = useState('campaign-id');
   const [utmCampaignValue, setUtmCampaignValue] = useState('');
-  const [utmContentMode, setUtmContentMode] = useState('custom');
+  const [utmCampaignEnabled, setUtmCampaignEnabled] = useState(true);
+  const [utmContentMode, setUtmContentMode] = useState('none');
   const [utmContentValue, setUtmContentValue] = useState('');
+  const [utmContentEnabled, setUtmContentEnabled] = useState(true);
 
-  // Which UTM mode dropdown is open (null or 'source'|'medium'|'campaign'|'content')
-  const [openModeDropdown, setOpenModeDropdown] = useState(null);
-  // Which UTM insert-variable dropdown is open
-  const [openInsertVarDropdown, setOpenInsertVarDropdown] = useState(null);
-
-  // Input refs for UTM custom value fields
-  const utmSourceInputRef = useRef(null);
-  const utmMediumInputRef = useRef(null);
-  const utmCampaignInputRef = useRef(null);
-  const utmContentParamInputRef = useRef(null);
-
-  // Refs for outside-click detection on UTM dropdowns
-  const utmModeDropdownRefs = useRef({});
-  const utmInsertVarRefs = useRef({});
 
   // Content labels state
   const [selectedLabels, setSelectedLabels] = useState(
@@ -169,66 +160,6 @@ const CampaignDialog = ({
       : null
   );
 
-  // Close UTM mode dropdown on outside click
-  useEffect(() => {
-    if (!openModeDropdown) return;
-    const handleClick = (e) => {
-      const ref = utmModeDropdownRefs.current[openModeDropdown];
-      if (ref && !ref.contains(e.target)) {
-        setOpenModeDropdown(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [openModeDropdown]);
-
-  // Close UTM insert variable dropdown on outside click
-  useEffect(() => {
-    if (!openInsertVarDropdown) return;
-    const handleClick = (e) => {
-      const ref = utmInsertVarRefs.current[openInsertVarDropdown];
-      if (ref && !ref.contains(e.target)) {
-        setOpenInsertVarDropdown(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [openInsertVarDropdown]);
-
-  // Insert a variable tag at cursor position in the UTM input
-  const handleInsertVariable = useCallback((paramKey, varId) => {
-    const inputRefMap = {
-      source: utmSourceInputRef,
-      medium: utmMediumInputRef,
-      campaign: utmCampaignInputRef,
-      content: utmContentParamInputRef,
-    };
-    const setterMap = {
-      source: setUtmSourceValue,
-      medium: setUtmMediumValue,
-      campaign: setUtmCampaignValue,
-      content: setUtmContentValue,
-    };
-    const inputRef = inputRefMap[paramKey];
-    const setter = setterMap[paramKey];
-    const tag = `{${varId}}`;
-
-    if (inputRef.current) {
-      const input = inputRef.current;
-      const start = input.selectionStart || 0;
-      const end = input.selectionEnd || 0;
-      const currentValue = input.value;
-      const newValue = currentValue.slice(0, start) + tag + currentValue.slice(end);
-      setter(newValue);
-      setTimeout(() => {
-        input.focus();
-        input.setSelectionRange(start + tag.length, start + tag.length);
-      }, 0);
-    } else {
-      setter(prev => prev + tag);
-    }
-    setOpenInsertVarDropdown(null);
-  }, []);
 
   // Auto-focus the name input when dialog opens
   useEffect(() => {
@@ -416,44 +347,64 @@ const CampaignDialog = ({
       selectedLabels.length > 0 ||
       !isBriefEmpty ||
       linkTrackingEnabled !== false ||
+      utmSourceMode !== 'social-channel-id' ||
       utmSourceValue !== '' ||
-      utmMediumValue !== '' ||
+      utmMediumMode !== 'custom' ||
+      utmMediumValue !== 'social' ||
+      utmCampaignMode !== 'campaign-id' ||
+      utmContentMode !== 'none' ||
       utmContentValue !== ''
     );
-  }, [isEditMode, name, color, startDate, endDate, selectedLabels, briefContent, uniqueId, isBriefEmpty, linkTrackingEnabled, utmSourceValue, utmMediumValue, utmContentValue]);
+  }, [isEditMode, name, color, startDate, endDate, selectedLabels, briefContent, uniqueId, isBriefEmpty, linkTrackingEnabled, utmSourceMode, utmSourceValue, utmMediumMode, utmMediumValue, utmCampaignMode, utmContentMode, utmContentValue]);
 
-  // Build UTM link preview data from new param states
+  // Build UTM link preview data from param states (respecting enabled toggles)
   const utmPreviewData = useMemo(() => {
     const baseUrl = 'https://www.emplifi.io/';
     const params = [
-      { key: 'utm_source', mode: utmSourceMode, value: utmSourceValue },
-      { key: 'utm_medium', mode: utmMediumMode, value: utmMediumValue },
-      { key: 'utm_campaign', mode: utmCampaignMode, value: utmCampaignValue },
-      { key: 'utm_content', mode: utmContentMode, value: utmContentValue },
+      { key: 'utm_source', mode: utmSourceMode, value: utmSourceValue, enabled: utmSourceEnabled },
+      { key: 'utm_medium', mode: utmMediumMode, value: utmMediumValue, enabled: utmMediumEnabled },
+      { key: 'utm_campaign', mode: utmCampaignMode, value: utmCampaignValue, enabled: utmCampaignEnabled },
+      { key: 'utm_content', mode: utmContentMode, value: utmContentValue, enabled: utmContentEnabled },
     ];
 
     const resolvedParts = [];
-    const variableParts = [];
+    const variableUrlParts = [];
 
-    params.forEach(({ key, mode, value }) => {
-      if (mode === 'none') return;
+    params.forEach(({ key, mode, value, enabled }) => {
+      if (!enabled) return;
+      if (mode === 'none') {
+        // Parameter is enabled but has no selection — include with empty value
+        resolvedParts.push(`${key}=`);
+        variableUrlParts.push(`${key}=`);
+        return;
+      }
       let rawValue, resolvedValue;
       if (mode === 'custom') {
-        if (!value.trim()) return;
-        rawValue = value.trim();
-        resolvedValue = rawValue.replace(/\{([^}]+)\}/g, (_, varId) => generateVarPreview(varId));
+        rawValue = value;
+        resolvedValue = value.replace(/\{([^}]+)\}/g, (_, varId) => generateVarPreview(varId));
       } else {
         rawValue = `{${mode}}`;
         resolvedValue = generateVarPreview(mode);
       }
       resolvedParts.push(`${key}=${encodeURIComponent(resolvedValue)}`);
-      variableParts.push({ key, rawValue });
+      variableUrlParts.push(`${key}=${rawValue}`);
     });
 
-    if (resolvedParts.length === 0) return null;
-    const resolvedUrl = `${baseUrl}?${resolvedParts.join('&')}`;
-    return { resolvedUrl, baseUrl, variableParts };
-  }, [utmSourceMode, utmSourceValue, utmMediumMode, utmMediumValue, utmCampaignMode, utmCampaignValue, utmContentMode, utmContentValue]);
+    const resolvedUrl = resolvedParts.length > 0 ? `${baseUrl}?${resolvedParts.join('&')}` : baseUrl;
+    const variableUrl = variableUrlParts.length > 0 ? `${baseUrl}?${variableUrlParts.join('&')}` : baseUrl;
+    return { resolvedUrl, variableUrl };
+  }, [utmSourceMode, utmSourceValue, utmSourceEnabled, utmMediumMode, utmMediumValue, utmMediumEnabled, utmCampaignMode, utmCampaignValue, utmCampaignEnabled, utmContentMode, utmContentValue, utmContentEnabled]);
+
+  // Render a URL string with {variable} placeholders highlighted in blue
+  const renderVariableUrl = (urlString) => {
+    const parts = urlString.split(/(\{[^}]+\})/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('{') && part.endsWith('}')) {
+        return <span key={i} className="utm-link-preview-vars__variable">{part}</span>;
+      }
+      return <React.Fragment key={i}>{part}</React.Fragment>;
+    });
+  };
 
   // Handle close button click — check for unsaved changes first
   const handleCloseAttempt = () => {
@@ -816,7 +767,7 @@ const CampaignDialog = ({
               )}
             </div>
 
-            {/* LINK URL PRESET (UTM) Card */}
+            {/* LINK TRACKING (UTM) Card */}
             <div className="link-tracking-card">
               <div className="link-tracking-card__header">
                 <div className="link-tracking-card__header-left">
@@ -824,173 +775,94 @@ const CampaignDialog = ({
                     <path d="M6.667 8.667a3.333 3.333 0 005.026.36l2-2A3.333 3.333 0 008.98 2.313l-1.147 1.14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M9.333 7.333a3.333 3.333 0 00-5.026-.36l-2 2a3.333 3.333 0 004.713 4.714l1.14-1.14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  <span className="link-tracking-card__header-label">LINK URL PRESET (UTM)</span>
+                  <span className="link-tracking-card__header-label">LINK TRACKING (UTM)</span>
                 </div>
                 <button
                   type="button"
                   className={`link-tracking-card__toggle ${linkTrackingEnabled ? 'link-tracking-card__toggle--on' : ''}`}
                   onClick={() => setLinkTrackingEnabled(prev => !prev)}
-                  role="switch"
-                  aria-checked={linkTrackingEnabled}
+                  aria-pressed={linkTrackingEnabled}
                   aria-label="Toggle link tracking"
                 >
                   <span className="link-tracking-card__toggle-label">
-                    {linkTrackingEnabled ? 'ON' : 'OFF'}
+                    {linkTrackingEnabled ? 'ON' : ''}
                   </span>
                   <span className="link-tracking-card__toggle-knob" />
+                  {!linkTrackingEnabled && (
+                    <span className="link-tracking-card__toggle-off-label">OFF</span>
+                  )}
                 </button>
               </div>
 
-              {/* UTM Builder content – expanded when toggle is ON */}
+              {/* UTM Builder body – collapsible content */}
               <div className={`link-tracking-card__body ${linkTrackingEnabled ? 'link-tracking-card__body--open' : ''}`}>
                 <div className="link-tracking-card__body-inner">
-                  <p className="link-tracking-card__utm-description">
-                    Generate custom campaign parameters for your advertising URLs.
-                  </p>
-
-                  {/* UTM Parameter Rows */}
-                  {[
-                    { key: 'source', label: 'utm_source=', mode: utmSourceMode, setMode: setUtmSourceMode, value: utmSourceValue, setValue: setUtmSourceValue, inputRef: utmSourceInputRef },
-                    { key: 'medium', label: 'utm_medium=', mode: utmMediumMode, setMode: setUtmMediumMode, value: utmMediumValue, setValue: setUtmMediumValue, inputRef: utmMediumInputRef },
-                    { key: 'campaign', label: 'utm_campaign=', mode: utmCampaignMode, setMode: setUtmCampaignMode, value: utmCampaignValue, setValue: setUtmCampaignValue, inputRef: utmCampaignInputRef },
-                    { key: 'content', label: 'utm_content=', mode: utmContentMode, setMode: setUtmContentMode, value: utmContentValue, setValue: setUtmContentValue, inputRef: utmContentParamInputRef },
-                  ].map((param) => (
-                    <div key={param.key} className="utm-param-row">
-                      <div className="utm-param-row__top">
-                        <span className="utm-param-row__label">{param.label}</span>
-                        {param.mode === 'custom' && (
-                          <div className="utm-param-row__actions" ref={el => { utmInsertVarRefs.current[param.key] = el; }}>
-                            <span className="utm-param-row__custom-label">Custom value</span>
-                            <span className="utm-param-row__info-icon">
-                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2"/>
-                                <path d="M5.5 5.5C5.5 4.67 6.17 4 7 4C7.83 4 8.5 4.67 8.5 5.5C8.5 6.17 8.03 6.73 7.4 6.93C7.17 7.01 7 7.21 7 7.45V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                                <circle cx="7" cy="9.75" r="0.75" fill="currentColor"/>
-                              </svg>
-                            </span>
-                            <button
-                              type="button"
-                              className="utm-param-row__insert-var-btn"
-                              onClick={() => setOpenInsertVarDropdown(prev => prev === param.key ? null : param.key)}
-                            >
-                              Insert variable
-                            </button>
-                            {openInsertVarDropdown === param.key && (
-                              <div className="utm-param-row__insert-var-panel">
-                                {UTM_VARIABLES.map(v => (
-                                  <button
-                                    key={v.id}
-                                    type="button"
-                                    className="utm-param-row__insert-var-option"
-                                    onClick={() => handleInsertVariable(param.key, v.id)}
-                                  >
-                                    {v.label}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <div className="utm-param-row__bottom">
-                        <div className="utm-param-row__mode-dropdown" ref={el => { utmModeDropdownRefs.current[param.key] = el; }}>
-                          <button
-                            type="button"
-                            className={`utm-param-row__mode-trigger ${openModeDropdown === param.key ? 'utm-param-row__mode-trigger--open' : ''}`}
-                            onClick={() => setOpenModeDropdown(prev => prev === param.key ? null : param.key)}
-                          >
-                            <span>{getModeLabel(param.mode)}</span>
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                              <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          </button>
-                          {openModeDropdown === param.key && (
-                            <div className="utm-param-row__mode-panel">
-                              <button
-                                type="button"
-                                className={`utm-param-row__mode-option ${param.mode === 'none' ? 'utm-param-row__mode-option--selected' : ''}`}
-                                onClick={() => { param.setMode('none'); setOpenModeDropdown(null); }}
-                              >
-                                None
-                              </button>
-                              <button
-                                type="button"
-                                className={`utm-param-row__mode-option ${param.mode === 'custom' ? 'utm-param-row__mode-option--selected' : ''}`}
-                                onClick={() => { param.setMode('custom'); setOpenModeDropdown(null); }}
-                              >
-                                {param.mode === 'custom' && (
-                                  <svg className="utm-param-row__check-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                    <path d="M3 7l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                                  </svg>
-                                )}
-                                Custom value
-                              </button>
-                              <div className="utm-param-row__mode-divider">
-                                <span className="utm-param-row__mode-divider-label">VARIABLES</span>
-                              </div>
-                              {UTM_VARIABLES.map(v => (
-                                <button
-                                  key={v.id}
-                                  type="button"
-                                  className={`utm-param-row__mode-option ${param.mode === v.id ? 'utm-param-row__mode-option--selected' : ''}`}
-                                  onClick={() => { param.setMode(v.id); setOpenModeDropdown(null); }}
-                                >
-                                  {v.label}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        {param.mode === 'custom' && (
-                          <input
-                            ref={param.inputRef}
-                            type="text"
-                            className="utm-param-row__input"
-                            value={param.value}
-                            onChange={(e) => param.setValue(e.target.value)}
-                            placeholder="Write custom value..."
-                            autoComplete="off"
-                          />
-                        )}
-                      </div>
+                  {/* Info box with live URL preview (variables highlighted) */}
+                  <div className="utm-info-box">
+                    <svg className="utm-info-box__icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.2"/>
+                      <path d="M8 7V11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      <circle cx="8" cy="5" r="0.75" fill="currentColor"/>
+                    </svg>
+                    <div className="utm-info-box__url">
+                      {renderVariableUrl(utmPreviewData.variableUrl)}
                     </div>
-                  ))}
+                  </div>
 
-                  {/* Link preview */}
-                  {utmPreviewData && (
-                    <>
-                      <div className="utm-link-preview">
-                        <div className="utm-link-preview__header">
-                          <span className="utm-link-preview__dot" />
-                          <span className="utm-link-preview__title">Link preview</span>
-                        </div>
-                        <div className="utm-link-preview__url-box">
-                          {utmPreviewData.resolvedUrl}
-                        </div>
-                      </div>
+                  {/* UTM Parameters */}
+                  <div className="utm-params-section">
+                    <UTMParameterRow
+                      label="Source (utm_source)"
+                      mode={utmSourceMode}
+                      value={utmSourceValue}
+                      enabled={utmSourceEnabled}
+                      onModeChange={setUtmSourceMode}
+                      onValueChange={setUtmSourceValue}
+                      onToggleEnabled={() => setUtmSourceEnabled(prev => !prev)}
+                    />
+                    <UTMParameterRow
+                      label="Medium (utm_medium)"
+                      mode={utmMediumMode}
+                      value={utmMediumValue}
+                      enabled={utmMediumEnabled}
+                      onModeChange={setUtmMediumMode}
+                      onValueChange={setUtmMediumValue}
+                      onToggleEnabled={() => setUtmMediumEnabled(prev => !prev)}
+                    />
+                    <UTMParameterRow
+                      label="Campaign name (utm_campaign)"
+                      mode={utmCampaignMode}
+                      value={utmCampaignValue}
+                      enabled={utmCampaignEnabled}
+                      onModeChange={setUtmCampaignMode}
+                      onValueChange={setUtmCampaignValue}
+                      onToggleEnabled={() => setUtmCampaignEnabled(prev => !prev)}
+                    />
+                    <UTMParameterRow
+                      label="Content (utm_content)"
+                      mode={utmContentMode}
+                      value={utmContentValue}
+                      enabled={utmContentEnabled}
+                      onModeChange={setUtmContentMode}
+                      onValueChange={setUtmContentValue}
+                      onToggleEnabled={() => setUtmContentEnabled(prev => !prev)}
+                    />
+                  </div>
 
-                      <div className="utm-link-preview-vars">
-                        <span className="utm-link-preview-vars__title">Link preview with variables</span>
-                        <div className="utm-link-preview-vars__url-box">
-                          {utmPreviewData.variableParts.map((part, i) => (
-                            <React.Fragment key={i}>
-                              {i === 0 ? `${utmPreviewData.baseUrl}?` : '&'}
-                              <span>{part.key}=</span>
-                              {part.rawValue.split(/(\{[^}]+\})/).map((segment, j) => {
-                                if (segment.startsWith('{') && segment.endsWith('}')) {
-                                  return <span key={j} className="utm-link-preview-vars__variable">{segment}</span>;
-                                }
-                                return segment;
-                              })}
-                            </React.Fragment>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
+                  {/* Link preview (bottom) */}
+                  <div className="utm-link-preview">
+                    <div className="utm-link-preview__header">
+                      <span className="utm-link-preview__dot" />
+                      <span className="utm-link-preview__title">Link preview</span>
+                    </div>
+                    <div className="utm-link-preview__url-box">
+                      {utmPreviewData.resolvedUrl}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+
           </div>
         )}
 
