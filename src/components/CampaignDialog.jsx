@@ -106,21 +106,22 @@ const CampaignDialog = ({
   const [utmSourceValue, setUtmSourceValue] = useState('');
   const [utmSourceEnabled, setUtmSourceEnabled] = useState(true);
   const [utmSourceTouched, setUtmSourceTouched] = useState(false);
-  const [utmMediumMode, setUtmMediumMode] = useState('custom');
-  const [utmMediumValue, setUtmMediumValue] = useState('social');
-  const [utmMediumEnabled, setUtmMediumEnabled] = useState(true);
+  const [utmMediumMode, setUtmMediumMode] = useState('none');
+  const [utmMediumValue, setUtmMediumValue] = useState('');
+  const [utmMediumEnabled, setUtmMediumEnabled] = useState(false);
   const [utmMediumTouched, setUtmMediumTouched] = useState(false);
-  const [utmCampaignMode, setUtmCampaignMode] = useState('campaign-id');
+  const [utmCampaignMode, setUtmCampaignMode] = useState('none');
   const [utmCampaignValue, setUtmCampaignValue] = useState('');
-  const [utmCampaignEnabled, setUtmCampaignEnabled] = useState(true);
+  const [utmCampaignEnabled, setUtmCampaignEnabled] = useState(false);
   const [utmCampaignTouched, setUtmCampaignTouched] = useState(false);
   const [utmContentMode, setUtmContentMode] = useState('none');
   const [utmContentValue, setUtmContentValue] = useState('');
-  const [utmContentEnabled, setUtmContentEnabled] = useState(true);
+  const [utmContentEnabled, setUtmContentEnabled] = useState(false);
   const [utmContentTouched, setUtmContentTouched] = useState(false);
 
   // UTM validation warning modal state
   const [showUtmWarningModal, setShowUtmWarningModal] = useState(false);
+  const [utmWarningType, setUtmWarningType] = useState(null); // 'no-params' | 'incomplete'
   const [incompleteUtmParams, setIncompleteUtmParams] = useState([]);
   const [pendingSaveAction, setPendingSaveAction] = useState(null);
 
@@ -249,16 +250,16 @@ const CampaignDialog = ({
     if (!linkTrackingEnabled) return [];
     const params = [];
     if (utmSourceEnabled && (utmSourceMode === 'none' || (utmSourceMode === 'custom' && utmSourceValue.trim() === ''))) {
-      params.push('Source (utm_source)');
+      params.push('utm_source');
     }
     if (utmMediumEnabled && (utmMediumMode === 'none' || (utmMediumMode === 'custom' && utmMediumValue.trim() === ''))) {
-      params.push('Medium (utm_medium)');
+      params.push('utm_medium');
     }
     if (utmCampaignEnabled && (utmCampaignMode === 'none' || (utmCampaignMode === 'custom' && utmCampaignValue.trim() === ''))) {
-      params.push('Campaign name (utm_campaign)');
+      params.push('utm_campaign');
     }
     if (utmContentEnabled && (utmContentMode === 'none' || (utmContentMode === 'custom' && utmContentValue.trim() === ''))) {
-      params.push('Content (utm_content)');
+      params.push('utm_content');
     }
     return params;
   }, [linkTrackingEnabled, utmSourceMode, utmSourceEnabled, utmSourceValue, utmMediumMode, utmMediumEnabled, utmMediumValue, utmCampaignMode, utmCampaignEnabled, utmCampaignValue, utmContentMode, utmContentEnabled, utmContentValue]);
@@ -401,13 +402,18 @@ const CampaignDialog = ({
       linkTrackingEnabled !== false ||
       utmSourceMode !== 'social-channel-id' ||
       utmSourceValue !== '' ||
-      utmMediumMode !== 'custom' ||
-      utmMediumValue !== 'social' ||
-      utmCampaignMode !== 'campaign-id' ||
+      utmSourceEnabled !== true ||
+      utmMediumMode !== 'none' ||
+      utmMediumValue !== '' ||
+      utmMediumEnabled !== false ||
+      utmCampaignMode !== 'none' ||
+      utmCampaignValue !== '' ||
+      utmCampaignEnabled !== false ||
       utmContentMode !== 'none' ||
-      utmContentValue !== ''
+      utmContentValue !== '' ||
+      utmContentEnabled !== false
     );
-  }, [isEditMode, name, color, startDate, endDate, selectedLabels, briefContent, uniqueId, isBriefEmpty, linkTrackingEnabled, utmSourceMode, utmSourceValue, utmMediumMode, utmMediumValue, utmCampaignMode, utmContentMode, utmContentValue]);
+  }, [isEditMode, name, color, startDate, endDate, selectedLabels, briefContent, uniqueId, isBriefEmpty, linkTrackingEnabled, utmSourceMode, utmSourceValue, utmSourceEnabled, utmMediumMode, utmMediumValue, utmMediumEnabled, utmCampaignMode, utmCampaignValue, utmCampaignEnabled, utmContentMode, utmContentValue, utmContentEnabled]);
 
   // Check if UTM Builder is ON but ALL parameter toggles are OFF
   const allUtmParamsOff = linkTrackingEnabled && !utmSourceEnabled && !utmMediumEnabled && !utmCampaignEnabled && !utmContentEnabled;
@@ -486,6 +492,11 @@ const CampaignDialog = ({
     onClose();
   };
 
+  // Determine if tracking URL should be generated
+  // Only when UTM Builder ON + at least one enabled param + all enabled params valid
+  const hasAnyEnabledParam = utmSourceEnabled || utmMediumEnabled || utmCampaignEnabled || utmContentEnabled;
+  const shouldGenerateTrackingUrl = linkTrackingEnabled && hasAnyEnabledParam && !hasIncompleteUtmParams;
+
   // Build campaign data payload
   const buildCampaignPayload = () => ({
     ...(isEditMode ? { id: campaignData?.id } : {}),
@@ -497,10 +508,11 @@ const CampaignDialog = ({
     labels: selectedLabels,
     briefContent,
     linkTrackingEnabled,
-    utmSourceMode, utmSourceValue,
-    utmMediumMode, utmMediumValue,
-    utmCampaignMode, utmCampaignValue,
-    utmContentMode, utmContentValue,
+    trackingUrl: shouldGenerateTrackingUrl ? utmPreviewData.resolvedUrl : null,
+    utmSourceMode, utmSourceValue, utmSourceEnabled,
+    utmMediumMode, utmMediumValue, utmMediumEnabled,
+    utmCampaignMode, utmCampaignValue, utmCampaignEnabled,
+    utmContentMode, utmContentValue, utmContentEnabled,
   });
 
   // Perform save (edit mode)
@@ -517,9 +529,20 @@ const CampaignDialog = ({
     }
   };
 
-  // Handle save/create click — check for incomplete UTM params first
+  // Handle save/create click — check for UTM issues before saving
   const handleSaveOrCreateClick = (action) => {
     if (!isFormValid) return;
+
+    // Case A: UTM is ON but no parameter toggles are enabled
+    if (linkTrackingEnabled && allUtmParamsOff) {
+      setUtmWarningType('no-params');
+      setIncompleteUtmParams([]);
+      setPendingSaveAction(action);
+      setShowUtmWarningModal(true);
+      return;
+    }
+
+    // Case B: UTM is ON and some enabled params are incomplete
     const incomplete = getIncompleteUtmParams();
     if (incomplete.length > 0) {
       // Mark all incomplete params as touched so inline errors show when user goes back
@@ -527,6 +550,7 @@ const CampaignDialog = ({
       if (utmMediumMode === 'custom' && utmMediumEnabled && utmMediumValue.trim() === '') setUtmMediumTouched(true);
       if (utmCampaignMode === 'custom' && utmCampaignEnabled && utmCampaignValue.trim() === '') setUtmCampaignTouched(true);
       if (utmContentMode === 'custom' && utmContentEnabled && utmContentValue.trim() === '') setUtmContentTouched(true);
+      setUtmWarningType('incomplete');
       setIncompleteUtmParams(incomplete);
       setPendingSaveAction(action);
       setShowUtmWarningModal(true);
@@ -884,22 +908,41 @@ const CampaignDialog = ({
               {/* UTM Builder body – collapsible content */}
               <div className={`link-tracking-card__body ${linkTrackingEnabled ? 'link-tracking-card__body--open' : ''}`}>
                 <div className="link-tracking-card__body-inner">
-                  {/* Info box with live URL preview (variables highlighted) */}
-                  <div className="utm-info-box">
-                    <svg className="utm-info-box__icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.2"/>
-                      <path d="M8 7V11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                      <circle cx="8" cy="5" r="0.75" fill="currentColor"/>
-                    </svg>
-                    <div className="utm-info-box__url">
-                      {renderVariableUrl(utmPreviewData.variableUrl)}
+                  {/* Link preview with variables */}
+                  {allUtmParamsOff ? (
+                    <div className="utm-link-preview-vars utm-link-preview-vars--warning">
+                      <div className="utm-link-preview-vars__header">
+                        <svg className="utm-link-preview-vars__icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <path d="M8.866 1.5a1 1 0 00-1.732 0L.536 13A1 1 0 001.402 14.5h13.196A1 1 0 0015.464 13L8.866 1.5z" fill="#F59E0B"/>
+                          <path d="M8 6v3" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                          <circle cx="8" cy="11" r="0.75" fill="white"/>
+                        </svg>
+                        <span className="utm-link-preview-vars__title">Tracking link is not configured</span>
+                      </div>
+                      <p className="utm-link-preview-vars__placeholder-text">
+                        UTM tracking is turned on, but no parameters are enabled. Enable at least one parameter to generate a tracking URL.
+                      </p>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="utm-link-preview-vars">
+                      <div className="utm-link-preview-vars__header">
+                        <svg className="utm-link-preview-vars__icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.2"/>
+                          <path d="M8 7V11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                          <circle cx="8" cy="5" r="0.75" fill="currentColor"/>
+                        </svg>
+                        <span className="utm-link-preview-vars__title">Link preview with variables</span>
+                      </div>
+                      <div className="utm-link-preview-vars__url-box">
+                        {renderVariableUrl(utmPreviewData.variableUrl)}
+                      </div>
+                    </div>
+                  )}
 
                   {/* UTM Parameters */}
                   <div className="utm-params-section">
                     <UTMParameterRow
-                      label="Source (utm_source)"
+                      label="utm_source"
                       mode={utmSourceMode}
                       value={utmSourceValue}
                       enabled={utmSourceEnabled}
@@ -910,7 +953,7 @@ const CampaignDialog = ({
                       onInputBlur={handleUtmSourceBlur}
                     />
                     <UTMParameterRow
-                      label="Medium (utm_medium)"
+                      label="utm_medium"
                       mode={utmMediumMode}
                       value={utmMediumValue}
                       enabled={utmMediumEnabled}
@@ -921,7 +964,7 @@ const CampaignDialog = ({
                       onInputBlur={handleUtmMediumBlur}
                     />
                     <UTMParameterRow
-                      label="Campaign name (utm_campaign)"
+                      label="utm_campaign"
                       mode={utmCampaignMode}
                       value={utmCampaignValue}
                       enabled={utmCampaignEnabled}
@@ -932,7 +975,7 @@ const CampaignDialog = ({
                       onInputBlur={handleUtmCampaignBlur}
                     />
                     <UTMParameterRow
-                      label="Content (utm_content)"
+                      label="utm_content"
                       mode={utmContentMode}
                       value={utmContentValue}
                       enabled={utmContentEnabled}
@@ -944,47 +987,6 @@ const CampaignDialog = ({
                     />
                   </div>
 
-                  {/* Link preview (bottom) */}
-                  <div className={`utm-link-preview ${(allUtmParamsOff || hasIncompleteUtmParams) ? 'utm-link-preview--warning' : ''}`}>
-                    <div className="utm-link-preview__header">
-                      {(allUtmParamsOff || hasIncompleteUtmParams) ? (
-                        <svg className="utm-link-preview__warning-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                          <path d="M8.866 1.5a1 1 0 00-1.732 0L.536 13A1 1 0 001.402 14.5h13.196A1 1 0 0015.464 13L8.866 1.5z" fill="#F59E0B"/>
-                          <path d="M8 6v3" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-                          <circle cx="8" cy="11" r="0.75" fill="white"/>
-                        </svg>
-                      ) : (
-                        <span className="utm-link-preview__dot" />
-                      )}
-                      <span className="utm-link-preview__title">
-                        Link preview with variables
-                      </span>
-                    </div>
-                    {(allUtmParamsOff || hasIncompleteUtmParams) && (
-                      <p className="utm-link-preview__warning-text">
-                        Link preview will be shown here once you input the required parameter.
-                      </p>
-                    )}
-                    {!allUtmParamsOff && (
-                      <div className="utm-link-preview__url-box">
-                        {utmPreviewData.resolvedUrl}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Warning: UTM enabled but all parameters OFF */}
-                  {allUtmParamsOff && (
-                    <div className="utm-all-off-warning">
-                      <svg className="utm-all-off-warning__icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M8.866 1.5a1 1 0 00-1.732 0L.536 13A1 1 0 001.402 14.5h13.196A1 1 0 0015.464 13L8.866 1.5z" fill="#F59E0B"/>
-                        <path d="M8 6v3" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-                        <circle cx="8" cy="11" r="0.75" fill="white"/>
-                      </svg>
-                      <span className="utm-all-off-warning__text">
-                        UTM Builder is enabled but all parameters are turned off. Enable at least one parameter or turn off UTM Builder.
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -1183,7 +1185,7 @@ const CampaignDialog = ({
         </div>
       )}
 
-      {/* UTM incomplete parameters warning modal */}
+      {/* UTM warning modal — Case A (no params enabled) or Case B (incomplete params) */}
       {showUtmWarningModal && (
         <div className="campaign-dialog__confirm-overlay" onClick={() => setShowUtmWarningModal(false)}>
           <div className="campaign-dialog__confirm-modal" onClick={(e) => e.stopPropagation()}>
@@ -1196,15 +1198,26 @@ const CampaignDialog = ({
                 <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
-            <h2 className="campaign-dialog__confirm-title">Some UTM parameters are incomplete</h2>
-            <p className="campaign-dialog__confirm-description">
-              The following parameters are enabled but have no value and won't be included in the tracking URL:
-            </p>
-            <ul className="campaign-dialog__confirm-list">
-              {incompleteUtmParams.map((param, i) => (
-                <li key={i}>{param}</li>
-              ))}
-            </ul>
+            {utmWarningType === 'no-params' ? (
+              <>
+                <h2 className="campaign-dialog__confirm-title">UTM Builder is on, but no parameters are enabled</h2>
+                <p className="campaign-dialog__confirm-description">
+                  Enable at least one UTM parameter to generate a tracking URL. You can save these settings, but no tracking URL will be generated.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="campaign-dialog__confirm-title">Some UTM parameters are incomplete</h2>
+                <p className="campaign-dialog__confirm-description">
+                  The following parameters are enabled but have no value and won't be included in the tracking URL:
+                </p>
+                <ul className="campaign-dialog__confirm-list">
+                  {incompleteUtmParams.map((param, i) => (
+                    <li key={i}>{param}</li>
+                  ))}
+                </ul>
+              </>
+            )}
             <div className="campaign-dialog__confirm-actions">
               <button
                 className="campaign-dialog__confirm-btn campaign-dialog__confirm-btn--secondary"
@@ -1213,7 +1226,7 @@ const CampaignDialog = ({
                 Go back and fix
               </button>
               <button
-                className="campaign-dialog__confirm-btn campaign-dialog__confirm-btn--primary"
+                className="campaign-dialog__confirm-btn campaign-dialog__confirm-btn--danger"
                 onClick={handleUtmWarningSaveAnyway}
               >
                 Save anyway

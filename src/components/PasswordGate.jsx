@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const CORRECT_PASSWORD = import.meta.env.VITE_ACCESS_PASSWORD || 'compact-preview-2026';
+const CORRECT_PASSWORD = import.meta.env.VITE_ACCESS_PASSWORD || 'Xk9#mP2vL$qR7nBw';
 
 function PasswordGate({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(
