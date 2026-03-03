@@ -24,6 +24,11 @@ const VERSION_STORAGE_KEY = 'compact-view-prototype-version';
 
 function App() {
   const [activeVersion, setActiveVersion] = useState(() => {
+    const urlParam = new URLSearchParams(window.location.search).get('version');
+    if (urlParam) {
+      sessionStorage.setItem(VERSION_STORAGE_KEY, urlParam);
+      return urlParam;
+    }
     return sessionStorage.getItem(VERSION_STORAGE_KEY) || 'v1';
   });
   const [activeTab, setActiveTab] = useState('Calendar');
