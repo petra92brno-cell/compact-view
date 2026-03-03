@@ -142,6 +142,79 @@
   background: #4338CA;
 }
 
+/* Share section (avatar + Share button) */
+.campaign-dialog__share-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.campaign-dialog__share-avatar-wrapper {
+  position: relative;
+}
+
+.campaign-dialog__share-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  transition: background-color 0.2s, box-shadow 0.2s;
+  flex-shrink: 0;
+}
+
+.campaign-dialog__share-avatar--private,
+.campaign-dialog__share-avatar--limited,
+.campaign-dialog__share-avatar--global {
+  background: var(--color-layer-level-2, #E7E7E7);
+  color: var(--color-on-layer-secondary, #6B7280);
+}
+
+.campaign-dialog__share-avatar--private:hover,
+.campaign-dialog__share-avatar--limited:hover,
+.campaign-dialog__share-avatar--global:hover {
+  background: var(--color-layer-level-2, #E7E7E7);
+}
+
+.campaign-dialog__share-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid var(--color-border-primary, rgba(0, 0, 0, 0.2));
+  border-radius: var(--border-radius-medium, 6px);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  line-height: 18px;
+  color: var(--color-on-layer-primary, #24242B);
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+
+.campaign-dialog__share-btn:hover {
+  background: var(--color-layer-level-1, #F9F9FA);
+  border-color: var(--color-on-layer-tertiary, #9D9DA0);
+}
+
+.campaign-dialog__share-btn svg {
+  flex-shrink: 0;
+}
+
+/* Header vertical divider (between Share and Delete) */
+.campaign-dialog__header-divider {
+  width: 1px;
+  height: 18px;
+  background: #D7D8D9;
+  flex-shrink: 0;
+}
+
 /* Delete campaign button (edit mode) */
 .campaign-dialog__delete-btn {
   background: none;

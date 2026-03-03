@@ -4,6 +4,8 @@ import CampaignColorPicker from './CampaignColorPicker';
 import DatePicker from './DatePicker';
 import ContentLabelsDropdown from './ContentLabelsDropdown';
 import UTMParameterRow from './UTMParameterRow';
+import ShareModal from './ShareModal';
+import SharingTooltip from './SharingTooltip';
 import { useClientConfig } from '../contexts/ClientConfigContext';
 
 const MAX_NAME_LENGTH = 100;
@@ -172,6 +174,13 @@ const CampaignDialog = ({
   // Delete confirmation state (edit mode only)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Sharing state (prototype — local only)
+  const [sharingType, setSharingType] = useState('private'); // 'private' | 'limited' | 'global'
+  const [globalPermission, setGlobalPermission] = useState('view'); // 'view' | 'edit'
+  const [sharedWith, setSharedWith] = useState([]); // invited users/teams for limited mode
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showSharingTooltip, setShowSharingTooltip] = useState(false);
+
   // Store original values for edit mode change detection
   const originalDataRef = useRef(
     isEditMode && campaignData
@@ -199,6 +208,7 @@ const CampaignDialog = ({
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
+
 
   // Validate name
   const validateName = useCallback((value, touched) => {
@@ -633,6 +643,64 @@ const CampaignDialog = ({
 
         {/* Right side */}
         <div className="campaign-dialog__header-right">
+          {/* Share section: sharing badge + Share button */}
+          <div className="campaign-dialog__share-section">
+            <div
+              className="sharing-tooltip-wrapper"
+              onMouseEnter={() => setShowSharingTooltip(true)}
+              onMouseLeave={() => setShowSharingTooltip(false)}
+            >
+              <div
+                className={`campaign-dialog__share-avatar campaign-dialog__share-avatar--${sharingType}`}
+                aria-label={`Sharing: ${sharingType}`}
+              >
+                {sharingType === 'private' && (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                )}
+                {sharingType === 'limited' && (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                )}
+                {sharingType === 'global' && (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                  </svg>
+                )}
+              </div>
+              {showSharingTooltip && (
+                <SharingTooltip
+                  sharingType={sharingType}
+                  sharedWith={sharedWith}
+                  campaignId={campaignData?.id}
+                  globalPermission={globalPermission}
+                />
+              )}
+            </div>
+            <button
+              type="button"
+              className="campaign-dialog__share-btn"
+              onClick={() => setShowShareModal(true)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3"/>
+                <circle cx="6" cy="12" r="3"/>
+                <circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+              Share
+            </button>
+          </div>
+          {isEditMode && <div className="campaign-dialog__header-divider" aria-hidden="true" />}
           {isEditMode && (
             <button
               className="campaign-dialog__delete-btn"
@@ -1170,6 +1238,23 @@ const CampaignDialog = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Share campaign modal */}
+      {showShareModal && (
+        <ShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          onSave={(option, invited, permission) => {
+            setSharingType(option);
+            setSharedWith(invited || []);
+            if (permission) setGlobalPermission(permission);
+          }}
+          initialOption={sharingType}
+          initialGlobalPermission={globalPermission}
+          initialInvitedUsers={sharedWith}
+          campaignName={headerTitle}
+        />
       )}
 
       {/* Delete campaign confirmation modal (edit mode) */}
