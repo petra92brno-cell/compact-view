@@ -3,16 +3,20 @@ import './VersionSwitcher.css';
 
 const VERSIONS = [
   { id: 'v1', label: 'v1 – Campaign Creation' },
-  // Future versions:
-  // { id: 'v2', label: 'v2 – Campaign Analytics' },
-  // { id: 'v3', label: 'v3 – Team Collaboration' },
+  { id: 'v1_new_month_week', label: 'v1_new month and week view' },
+  { id: 'v1_share', label: 'v1_share' },
+  { id: 'v1_collection', label: 'v1_collection' },
+  { id: 'mercedes', label: 'Mercedes-Benz – Client Demo' },
 ];
 
-const VersionSwitcher = ({ children }) => {
+const VersionSwitcher = ({ children, activeVersion: activeVersionProp, onVersionChange }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeVersion, setActiveVersion] = useState('v1');
+  const [internalVersion, setInternalVersion] = useState('v1');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const dropdownRef = useRef(null);
+
+  const activeVersion = activeVersionProp ?? internalVersion;
+  const handleVersionChange = onVersionChange ?? ((id) => setInternalVersion(id));
 
   // Close on Escape key
   useEffect(() => {
@@ -41,8 +45,7 @@ const VersionSwitcher = ({ children }) => {
   };
 
   const handleVersionSelect = (versionId) => {
-    setActiveVersion(versionId);
-    // Future: navigate to different prototype version
+    handleVersionChange(versionId);
     setIsOpen(false);
   };
 

@@ -5,14 +5,51 @@ import ContentArea from './components/ContentArea';
 import CreatePost from './components/CreatePost';
 import Snackbar from './components/Snackbar';
 import { mockCampaigns as initialCampaigns } from './data/mockData';
+import {
+  mercedesCampaigns as initialMercedesCampaigns,
+  mercedesScheduledPosts,
+  mercesDraftPosts,
+  mercedesNotes,
+  MERCEDES_PROFILES,
+  MERCEDES_PROFILE_MAP,
+  MERCEDES_LABEL_DATA,
+  MERCEDES_LABEL_GROUPS,
+  MERCEDES_BRAND_GROUPS,
+  MERCEDES_MOCK_IMAGES,
+} from './data/mockDataMercedes';
+import { ClientConfigContext } from './contexts/ClientConfigContext';
 import './App.css';
 
+const VERSION_STORAGE_KEY = 'compact-view-prototype-version';
+
 function App() {
+  const [activeVersion, setActiveVersion] = useState(() => {
+    return sessionStorage.getItem(VERSION_STORAGE_KEY) || 'v1';
+  });
   const [activeTab, setActiveTab] = useState('Calendar');
   const [currentView, setCurrentView] = useState('main'); // 'main' or 'createPost'
 
+  const handleVersionChange = useCallback((versionId) => {
+    setActiveVersion(versionId);
+    sessionStorage.setItem(VERSION_STORAGE_KEY, versionId);
+  }, []);
+
   // Shared campaign state — single source of truth for Calendar + CreatePost
-  const [campaigns, setCampaigns] = useState(initialCampaigns);
+  // Initialise with the correct dataset for the current version
+  const [campaigns, setCampaigns] = useState(() =>
+    sessionStorage.getItem(VERSION_STORAGE_KEY) === 'mercedes'
+      ? initialMercedesCampaigns
+      : initialCampaigns
+  );
+
+  // When switching versions, reset campaigns to the appropriate dataset
+  useEffect(() => {
+    if (activeVersion === 'mercedes') {
+      setCampaigns(initialMercedesCampaigns);
+    } else {
+      setCampaigns(initialCampaigns);
+    }
+  }, [activeVersion]);
 
   // Shared user-created posts — single source of truth for Calendar + Feeds
   const [userPosts, setUserPosts] = useState([]);
@@ -130,11 +167,78 @@ function App() {
     };
   }, []);
 
+  // Placeholder design area for versions other than v1 (Campaign Creation)
+  const renderPlaceholderDesignArea = (versionLabel) => (
+    <div className="flex-1 flex flex-col items-center justify-center bg-[#f8f9fa] text-gray-500 font-sans">
+      <div className="text-center max-w-md px-6">
+        <p className="text-sm font-medium uppercase tracking-wider text-gray-400 mb-2">
+          Design area
+        </p>
+        <p className="text-lg font-semibold text-gray-700 mb-2">{versionLabel}</p>
+        <p className="text-sm text-gray-500">
+          Tady můžeš pracovat na designu této verze bez vlivu na ostatní záložky.
+        </p>
+      </div>
+    </div>
+  );
+
+  const versionLabels = {
+    v1_new_month_week: 'v1_new month and week view',
+    v1_share: 'v1_share',
+    v1_collection: 'v1_collection',
+  };
+
+  const isCampaignCreationVersion = activeVersion === 'v1';
+  const isMercedesVersion = activeVersion === 'mercedes';
+  const isFullAppVersion = isCampaignCreationVersion || isMercedesVersion;
+
+  // Client-specific config — also provided via context for deep components (ContentLabelsDropdown)
+  const clientConfig = isMercedesVersion
+    ? {
+        mockScheduledPosts: mercedesScheduledPosts,
+        mockDraftPosts: mercesDraftPosts,
+        mockNotes: mercedesNotes,
+        availableProfiles: MERCEDES_PROFILES,
+        profileMap: MERCEDES_PROFILE_MAP,
+        labelData: MERCEDES_LABEL_DATA,
+        labelGroups: MERCEDES_LABEL_GROUPS,
+        brandGroups: MERCEDES_BRAND_GROUPS,
+        mockImages: MERCEDES_MOCK_IMAGES,
+        defaultUtmSettings: {
+          linkTrackingEnabled: true,
+          utmSourceMode: 'social-channel-id',
+          utmSourceValue: '',
+          utmSourceEnabled: true,
+          utmMediumMode: 'asset-id',
+          utmMediumValue: '',
+          utmMediumEnabled: true,
+          utmCampaignMode: 'custom',
+          utmCampaignValue: '{campaign-id}_UTM_kls{unique-id}',
+          utmCampaignEnabled: true,
+          utmContentMode: 'none',
+          utmContentValue: '',
+          utmContentEnabled: false,
+        },
+      }
+    : null;
+
   return (
+    <ClientConfigContext.Provider value={clientConfig}>
     <div className="flex h-screen w-screen overflow-hidden bg-white">
-      <LeftSidebar />
-      {currentView === 'createPost' ? (
-        <CreatePost onBack={handleBackFromCreatePost} campaigns={campaigns} onPostCreate={handlePostCreate} />
+      <LeftSidebar
+        activeVersion={activeVersion}
+        onVersionChange={handleVersionChange}
+      />
+      {!isFullAppVersion ? (
+        renderPlaceholderDesignArea(versionLabels[activeVersion] || activeVersion)
+      ) : currentView === 'createPost' ? (
+        <CreatePost
+          onBack={handleBackFromCreatePost}
+          campaigns={campaigns}
+          onPostCreate={handlePostCreate}
+          availableProfiles={clientConfig?.availableProfiles}
+          profileMap={clientConfig?.profileMap}
+        />
       ) : (
         <>
           <MiddleSidebar activeTab={activeTab} onTabChange={handleTabChange} />
@@ -148,6 +252,9 @@ function App() {
             onDeletePost={handleDeletePost}
             navigateToDate={navigateToDate}
             onNavigateComplete={handleNavigateComplete}
+            mockScheduledPosts={clientConfig?.mockScheduledPosts}
+            mockDraftPosts={clientConfig?.mockDraftPosts}
+            mockNotes={clientConfig?.mockNotes}
           />
         </>
       )}
@@ -159,6 +266,7 @@ function App() {
         />
       )}
     </div>
+    </ClientConfigContext.Provider>
   );
 }
 

@@ -3,8 +3,8 @@ import FacebookIcon from '../assets/facebook.svg';
 import InstagramIcon from '../assets/instagram.svg';
 import './ProfileSelector.css';
 
-// Same profile data used across the app
-const ALL_PROFILES = [
+// Default profile data used across the app
+const DEFAULT_PROFILES = [
   { id: 'fakecosmetic-cz-fb', name: 'FakeCosmetic CZ', platform: 'FB', initials: 'FC' },
   { id: 'fakecosmetic-cz-ig', name: 'FakeCosmetic CZ', platform: 'IG', initials: 'FC' },
   { id: 'fakecompany-fr-fb', name: 'FakeCompany FR', platform: 'FB', initials: 'FF' },
@@ -17,7 +17,8 @@ const getPlatformIcon = (platform) => {
   return null;
 };
 
-const ProfileSelector = ({ selectedProfiles, onSelectionChange, hasError }) => {
+const ProfileSelector = ({ selectedProfiles, onSelectionChange, hasError, availableProfiles }) => {
+  const ALL_PROFILES = availableProfiles || DEFAULT_PROFILES;
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   // Temp selection used inside the dropdown (committed on Save)

@@ -17,7 +17,7 @@ import iconSettings from '../assets/Icon-9.svg';
 import iconEmplifi from '../assets/Emplifi.svg';
 import imgAvatar from '../assets/9ce1b58aecd4ef61664409fcdd66adf48254ccb2.png';
 
-const LeftSidebar = () => {
+const LeftSidebar = ({ activeVersion, onVersionChange }) => {
   return (
     <div className="left-sidebar">
       {/* Logo */}
@@ -96,7 +96,10 @@ const LeftSidebar = () => {
           </button>
 
           {/* User Profile with Version Switcher */}
-          <VersionSwitcher>
+          <VersionSwitcher
+            activeVersion={activeVersion}
+            onVersionChange={onVersionChange}
+          >
             <button className="left-sidebar__item">
               <div className="left-sidebar__profile">
                 <div className="left-sidebar__avatar">

@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import './ContentLabelsDropdown.css';
+import { useClientConfig } from '../contexts/ClientConfigContext';
 
-const LABEL_DATA = [
+const DEFAULT_LABEL_DATA = [
   // Skincare (green)
   { id: 'moisturizers', name: 'Moisturizers', group: 'Skincare', color: '#22C55E' },
   { id: 'serums', name: 'Serums & Essences', group: 'Skincare', color: '#22C55E' },
@@ -29,11 +30,15 @@ const LABEL_DATA = [
   { id: 'brand', name: 'Brand Partnership', group: 'Campaigns', color: '#3B82F6' },
 ];
 
-const GROUPS = ['Skincare', 'Makeup', 'Fragrance', 'Campaigns'];
+const DEFAULT_GROUPS = ['Skincare', 'Makeup', 'Fragrance', 'Campaigns'];
 
 const DROPDOWN_PADDING = 20; // breathing room from viewport edges
 
 const ContentLabelsDropdown = ({ isOpen, onClose, onApply, anchorRef, selectedLabels = [] }) => {
+  const clientConfig = useClientConfig();
+  const LABEL_DATA = clientConfig?.labelData || DEFAULT_LABEL_DATA;
+  const GROUPS = clientConfig?.labelGroups || DEFAULT_GROUPS;
+
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [localSelected, setLocalSelected] = useState(selectedLabels.map(l => l.id));
@@ -128,6 +133,15 @@ const ContentLabelsDropdown = ({ isOpen, onClose, onApply, anchorRef, selectedLa
     onClose();
   };
 
+  // Update local selection when LABEL_DATA changes (client switch)
+  const labelDataRef = React.useRef(LABEL_DATA);
+  React.useEffect(() => {
+    if (labelDataRef.current !== LABEL_DATA) {
+      labelDataRef.current = LABEL_DATA;
+      setLocalSelected(selectedLabels.map(l => l.id).filter(id => LABEL_DATA.some(ld => ld.id === id)));
+    }
+  }, [LABEL_DATA, selectedLabels]);
+
   // Filter labels by search query
   const filteredLabels = LABEL_DATA.filter(label =>
     label.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -167,11 +181,11 @@ const ContentLabelsDropdown = ({ isOpen, onClose, onApply, anchorRef, selectedLa
       <div className="cl-dropdown__info">
         <span className="cl-dropdown__info-item">
           Content labels
-          <span className="cl-dropdown__info-count">20</span>
+          <span className="cl-dropdown__info-count">{LABEL_DATA.length}</span>
         </span>
         <span className="cl-dropdown__info-item">
           Label groups
-          <span className="cl-dropdown__info-count">4</span>
+          <span className="cl-dropdown__info-count">{GROUPS.length}</span>
         </span>
       </div>
 
@@ -259,5 +273,5 @@ const ContentLabelsDropdown = ({ isOpen, onClose, onApply, anchorRef, selectedLa
   );
 };
 
-export { LABEL_DATA };
 export default ContentLabelsDropdown;
+

@@ -56,7 +56,7 @@ const FILTER_OPTIONS = [
   { value: 'completed', label: 'Completed' },
 ];
 
-const CampaignsFeed = ({ campaigns = [], onCampaignsChange, userPosts = [], deletedPostIds = new Set() }) => {
+const CampaignsFeed = ({ campaigns = [], onCampaignsChange, userPosts = [], deletedPostIds = new Set(), mockPosts }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortField, setSortField] = useState('startDate');
@@ -95,8 +95,9 @@ const CampaignsFeed = ({ campaigns = [], onCampaignsChange, userPosts = [], dele
   // Count scheduled posts per campaign
   const scheduledPostCounts = useMemo(() => {
     const counts = {};
+    const basePosts = mockPosts != null ? mockPosts : allPosts;
     const allAvailablePosts = [
-      ...allPosts.filter((p) => !deletedPostIds.has(p.id)),
+      ...basePosts.filter((p) => !deletedPostIds.has(p.id)),
       ...userPosts,
     ];
     allAvailablePosts.forEach((post) => {
@@ -213,6 +214,19 @@ const CampaignsFeed = ({ campaigns = [], onCampaignsChange, userPosts = [], dele
       uniqueId: campaign.uniqueId || '',
       labels: campaign.labels || [],
       briefContent: campaign.briefContent || '',
+      linkTrackingEnabled: campaign.linkTrackingEnabled || false,
+      utmSourceMode: campaign.utmSourceMode ?? 'social-channel-id',
+      utmSourceValue: campaign.utmSourceValue ?? '',
+      utmSourceEnabled: campaign.utmSourceEnabled ?? true,
+      utmMediumMode: campaign.utmMediumMode ?? 'none',
+      utmMediumValue: campaign.utmMediumValue ?? '',
+      utmMediumEnabled: campaign.utmMediumEnabled ?? false,
+      utmCampaignMode: campaign.utmCampaignMode ?? 'none',
+      utmCampaignValue: campaign.utmCampaignValue ?? '',
+      utmCampaignEnabled: campaign.utmCampaignEnabled ?? false,
+      utmContentMode: campaign.utmContentMode ?? 'none',
+      utmContentValue: campaign.utmContentValue ?? '',
+      utmContentEnabled: campaign.utmContentEnabled ?? false,
     });
     setIsDialogOpen(true);
   }, []);
@@ -237,6 +251,19 @@ const CampaignsFeed = ({ campaigns = [], onCampaignsChange, userPosts = [], dele
                 endDate: campaignData.endDate,
                 labels: campaignData.labels || [],
                 briefContent: campaignData.briefContent || '',
+                linkTrackingEnabled: campaignData.linkTrackingEnabled || false,
+                utmSourceMode: campaignData.utmSourceMode,
+                utmSourceValue: campaignData.utmSourceValue,
+                utmSourceEnabled: campaignData.utmSourceEnabled,
+                utmMediumMode: campaignData.utmMediumMode,
+                utmMediumValue: campaignData.utmMediumValue,
+                utmMediumEnabled: campaignData.utmMediumEnabled,
+                utmCampaignMode: campaignData.utmCampaignMode,
+                utmCampaignValue: campaignData.utmCampaignValue,
+                utmCampaignEnabled: campaignData.utmCampaignEnabled,
+                utmContentMode: campaignData.utmContentMode,
+                utmContentValue: campaignData.utmContentValue,
+                utmContentEnabled: campaignData.utmContentEnabled,
               }
             : c
         )

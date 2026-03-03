@@ -1,40 +1,36 @@
 import React, { useState, useRef, useEffect } from 'react';
 import CaretDownIcon from '../assets/Caret down.svg';
+import { useClientConfig } from '../contexts/ClientConfigContext';
 import './ProfileGroupSelector.css';
 
-// Extract unique brands and profiles from posts
-const extractBrandsAndProfiles = () => {
-  // This would normally come from props or context
-  // For now, using the data structure from ScheduledFeed
-  const brands = [
-    {
-      id: 'fakecosmetic-cz',
-      name: 'FakeCosmetic CZ',
-      profiles: [
-        { id: 'fakecosmetic-cz-fb', name: 'FakeCosmetic CZ', platform: 'FB', url: '/fakecosmetic-cz' },
-        { id: 'fakecosmetic-cz-ig', name: 'FakeCosmetic CZ', platform: 'IG', url: '/fakecosmetic-cz' }
-      ]
-    },
-    {
-      id: 'fakecompany-fr',
-      name: 'FakeCompany FR',
-      profiles: [
-        { id: 'fakecompany-fr-fb', name: 'FakeCompany FR', platform: 'FB', url: '/fakecompany-fr' },
-        { id: 'fakecompany-fr-ig', name: 'FakeCompany FR', platform: 'IG', url: '/fakecompany-fr' }
-      ]
-    }
-  ];
-  return brands;
-};
+const DEFAULT_BRANDS = [
+  {
+    id: 'fakecosmetic-cz',
+    name: 'FakeCosmetic CZ',
+    profiles: [
+      { id: 'fakecosmetic-cz-fb', name: 'FakeCosmetic CZ', platform: 'FB', url: '/fakecosmetic-cz' },
+      { id: 'fakecosmetic-cz-ig', name: 'FakeCosmetic CZ', platform: 'IG', url: '/fakecosmetic-cz' }
+    ]
+  },
+  {
+    id: 'fakecompany-fr',
+    name: 'FakeCompany FR',
+    profiles: [
+      { id: 'fakecompany-fr-fb', name: 'FakeCompany FR', platform: 'FB', url: '/fakecompany-fr' },
+      { id: 'fakecompany-fr-ig', name: 'FakeCompany FR', platform: 'IG', url: '/fakecompany-fr' }
+    ]
+  }
+];
 
 const ProfileGroupSelector = ({ isOpen, onClose, onApply, anchorRef }) => {
+  const clientConfig = useClientConfig();
   const [selectedProfiles, setSelectedProfiles] = useState(new Set());
   const [selectAllChecked, setSelectAllChecked] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const selectorRef = useRef(null);
 
-  const brands = extractBrandsAndProfiles();
+  const brands = clientConfig?.brandGroups || DEFAULT_BRANDS;
 
   // Calculate position based on anchor element
   useEffect(() => {

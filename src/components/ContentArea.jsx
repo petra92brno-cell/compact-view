@@ -9,14 +9,14 @@ import EmptyState from './EmptyState';
 import CaretDownIcon from '../assets/Caret down.svg';
 import './ContentArea.css';
 
-const ContentArea = ({ activeTab, onCreatePost, campaigns, onCampaignsChange, userPosts = [], deletedPostIds = new Set(), onDeletePost, navigateToDate, onNavigateComplete }) => {
+const ContentArea = ({ activeTab, onCreatePost, campaigns, onCampaignsChange, userPosts = [], deletedPostIds = new Set(), onDeletePost, navigateToDate, onNavigateComplete, mockScheduledPosts, mockDraftPosts, mockNotes }) => {
   const [viewMode, setViewMode] = useState('default');
   const [viewDropdownOpen, setViewDropdownOpen] = useState(false);
   const [filteredProfileIds, setFilteredProfileIds] = useState([]);
   const [dateRange, setDateRange] = useState(null); // { startDate, endDate }
   const [selectedPostIds, setSelectedPostIds] = useState(new Set());
   const [totalPostsCount, setTotalPostsCount] = useState(0);
-  const [calendarPosts, setCalendarPosts] = useState([]);
+  const [calendarPosts, setCalendarPosts] = useState(mockScheduledPosts || []);
   const [deleteConfirmPostId, setDeleteConfirmPostId] = useState(null);
   const selectAllCallbackRef = useRef(null);
   const viewDropdownRef = useRef(null);
@@ -102,6 +102,7 @@ const ContentArea = ({ activeTab, onCreatePost, campaigns, onCampaignsChange, us
                 deletedPostIds={deletedPostIds}
                 navigateToDate={navigateToDate}
                 onNavigateComplete={onNavigateComplete}
+                notes={mockNotes || []}
               />
             );
           case 'Scheduled':
@@ -118,6 +119,7 @@ const ContentArea = ({ activeTab, onCreatePost, campaigns, onCampaignsChange, us
                 onPostsChange={setCalendarPosts}
                 userPosts={userPosts}
                 deletedPostIds={deletedPostIds}
+                posts={mockScheduledPosts || []}
               />
             );
       case 'Waiting for approval':
@@ -145,6 +147,7 @@ const ContentArea = ({ activeTab, onCreatePost, campaigns, onCampaignsChange, us
             onTotalCountChange={setTotalPostsCount}
             userPosts={userPosts}
             deletedPostIds={deletedPostIds}
+            posts={mockDraftPosts || []}
           />
         );
       case 'Campaigns':
@@ -154,6 +157,7 @@ const ContentArea = ({ activeTab, onCreatePost, campaigns, onCampaignsChange, us
             onCampaignsChange={onCampaignsChange}
             userPosts={userPosts}
             deletedPostIds={deletedPostIds}
+            mockPosts={mockScheduledPosts}
           />
         );
       default:

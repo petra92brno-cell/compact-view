@@ -3,7 +3,67 @@ import CampaignSelector from './CampaignSelector';
 import ProfileSelector from './ProfileSelector';
 import PostDateTimePicker from './PostDateTimePicker';
 import { formatDateForDisplay } from '../data/mockData';
+import { useClientConfig } from '../contexts/ClientConfigContext';
 import './CreatePost.css';
+
+// --- UTM helpers ---
+
+/**
+ * Resolve a UTM parameter value from its mode + stored value.
+ * Variable modes (e.g. 'social-channel-id') are kept as {placeholders}
+ * so the mockup is honest about dynamic substitution.
+ * Two structural variables can be resolved from campaign data directly.
+ */
+const resolveUtmValue = (mode, value, campaign) => {
+  if (mode === 'custom') return value || '';
+  if (mode === 'none' || !mode) return '';
+  if (mode === 'campaign-id') return campaign?.id || '';
+  if (mode === 'unique-id') return campaign?.uniqueId || '';
+  return `{${mode}}`;
+};
+
+/**
+ * Build a UTM query string from a campaign object.
+ * Returns an empty string when tracking is disabled or no params are configured.
+ */
+const buildUtmParams = (campaign) => {
+  if (!campaign?.linkTrackingEnabled) return '';
+
+  const params = [];
+  const add = (key, mode, value) => {
+    if (!mode || mode === 'none') return;
+    const val = resolveUtmValue(mode, value, campaign);
+    if (val) params.push(`${key}=${encodeURIComponent(val)}`);
+  };
+
+  if (campaign.utmSourceEnabled)   add('utm_source',   campaign.utmSourceMode,   campaign.utmSourceValue);
+  if (campaign.utmMediumEnabled)   add('utm_medium',   campaign.utmMediumMode,   campaign.utmMediumValue);
+  if (campaign.utmCampaignEnabled) add('utm_campaign', campaign.utmCampaignMode, campaign.utmCampaignValue);
+  if (campaign.utmContentEnabled)  add('utm_content',  campaign.utmContentMode,  campaign.utmContentValue);
+
+  return params.join('&');
+};
+
+/**
+ * Append UTM params to every URL found in `text`.
+ * Already-tracked URLs (containing utm_) are left untouched.
+ */
+const injectUtmIntoText = (text, campaign) => {
+  const utmString = buildUtmParams(campaign);
+  if (!utmString) return { text, modified: false };
+
+  const urlRegex = /https?:\/\/[^\s<>"{}|\\^`[\]]+/g;
+  let modified = false;
+
+  const result = text.replace(urlRegex, (url) => {
+    if (url.includes('utm_')) return url;
+    modified = true;
+    const sep = url.includes('?') ? '&' : '?';
+    return `${url}${sep}${utmString}`;
+  });
+
+  return { text: result, modified };
+};
 
 /**
  * Round a Date to the nearest 30 minutes (ceiling).
@@ -21,7 +81,7 @@ const roundToNearest30 = (date) => {
   return d;
 };
 
-const MOCK_IMAGES = [
+const DEFAULT_MOCK_IMAGES = [
   'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=600',
   'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=600',
   'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=600',
@@ -31,15 +91,18 @@ const MOCK_IMAGES = [
 const MAX_CHARS = 2200;
 const MAX_IMAGES = 4;
 
-// Map profile selector IDs to the post profile format used across Calendar and Feeds
-const PROFILE_MAP = {
+// Default profile map (overridden per client via prop)
+const DEFAULT_PROFILE_MAP = {
   'fakecosmetic-cz-fb': { name: 'FakeCosmetic CZ', url: '/fakecosmetic-cz', platform: 'FB', avatar: null },
   'fakecosmetic-cz-ig': { name: 'FakeCosmetic CZ', url: '/fakecosmetic-cz', platform: 'IG', avatar: null },
   'fakecompany-fr-fb': { name: 'FakeCompany FR', url: '/fakecompany-fr', platform: 'FB', avatar: null },
   'fakecompany-fr-ig': { name: 'FakeCompany FR', url: '/fakecompany-fr', platform: 'IG', avatar: null },
 };
 
-const CreatePost = ({ onBack, campaigns = [], onPostCreate }) => {
+const CreatePost = ({ onBack, campaigns = [], onPostCreate, availableProfiles, profileMap }) => {
+  const clientConfig = useClientConfig();
+  const PROFILE_MAP = profileMap || DEFAULT_PROFILE_MAP;
+  const MOCK_IMAGES = clientConfig?.mockImages || DEFAULT_MOCK_IMAGES;
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [selectedProfiles, setSelectedProfiles] = useState([]);
   const [postContent, setPostContent] = useState('');
@@ -47,6 +110,7 @@ const CreatePost = ({ onBack, campaigns = [], onPostCreate }) => {
   const [uploadedImages, setUploadedImages] = useState([]);
   const [nextImageIndex, setNextImageIndex] = useState(0);
   const [showErrors, setShowErrors] = useState(false);
+  const [utmApplied, setUtmApplied] = useState(false);
 
   const charsRemaining = MAX_CHARS - postContent.length;
 
@@ -75,10 +139,35 @@ const CreatePost = ({ onBack, campaigns = [], onPostCreate }) => {
 
   const isScheduled = getIsScheduled();
 
+  const handleCampaignSelect = (campaign) => {
+    setSelectedCampaign(campaign);
+    setUtmApplied(false);
+  };
+
   const handleTextChange = (e) => {
     const value = e.target.value;
     if (value.length <= MAX_CHARS) {
       setPostContent(value);
+    }
+  };
+
+  const handlePaste = (e) => {
+    if (!selectedCampaign?.linkTrackingEnabled) return;
+
+    const pastedText = e.clipboardData.getData('text');
+    if (!/https?:\/\//.test(pastedText)) return;
+
+    const { text: enriched, modified } = injectUtmIntoText(pastedText, selectedCampaign);
+    if (!modified) return;
+
+    e.preventDefault();
+    const textarea = e.target;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newContent = postContent.slice(0, start) + enriched + postContent.slice(end);
+    if (newContent.length <= MAX_CHARS) {
+      setPostContent(newContent);
+      setUtmApplied(true);
     }
   };
 
@@ -103,9 +192,10 @@ const CreatePost = ({ onBack, campaigns = [], onPostCreate }) => {
    * Regular function (not useCallback) — always reads fresh state values.
    */
   const buildPosts = (status, dateTime) => {
+    const defaultProfileId = availableProfiles ? availableProfiles[0]?.id : 'fakecosmetic-cz-fb';
     const profileIds = selectedProfiles.length > 0
       ? selectedProfiles
-      : ['fakecosmetic-cz-fb']; // default if none selected
+      : [defaultProfileId];
 
     return profileIds.map((profileId, index) => {
       const profile = PROFILE_MAP[profileId] || {
@@ -176,7 +266,7 @@ const CreatePost = ({ onBack, campaigns = [], onPostCreate }) => {
             <CampaignSelector
               campaigns={campaigns}
               selectedCampaign={selectedCampaign}
-              onSelectCampaign={setSelectedCampaign}
+              onSelectCampaign={handleCampaignSelect}
             />
           </div>
 
@@ -186,6 +276,7 @@ const CreatePost = ({ onBack, campaigns = [], onPostCreate }) => {
               selectedProfiles={selectedProfiles}
               onSelectionChange={setSelectedProfiles}
               hasError={showErrors && hasProfileError}
+              availableProfiles={availableProfiles}
             />
             {showErrors && hasProfileError && (
               <span className="create-post__error-text">Select at least one profile</span>
@@ -208,10 +299,20 @@ const CreatePost = ({ onBack, campaigns = [], onPostCreate }) => {
               rows={6}
               value={postContent}
               onChange={handleTextChange}
+              onPaste={handlePaste}
               maxLength={MAX_CHARS}
             />
             {showErrors && hasContentError && (
               <span className="create-post__error-text">Enter post content</span>
+            )}
+            {utmApplied && selectedCampaign && (
+              <div className="create-post__utm-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                  <path d="M10 13C10.4295 13.5741 10.9774 14.0491 11.6066 14.3929C12.2357 14.7367 12.9315 14.9411 13.6467 14.9923C14.3618 15.0435 15.0796 14.9403 15.7513 14.6897C16.4231 14.4392 17.0331 14.047 17.54 13.54L20.54 10.54C21.4508 9.59695 21.9548 8.33394 21.9434 7.02296C21.932 5.71198 21.4061 4.45791 20.479 3.53087C19.552 2.60383 18.2979 2.07799 16.987 2.0666C15.676 2.0552 14.413 2.55918 13.47 3.47L11.75 5.18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M14 11C13.5705 10.4259 13.0226 9.9508 12.3934 9.60704C11.7642 9.26328 11.0684 9.05886 10.3533 9.00765C9.63816 8.95643 8.92037 9.05961 8.24861 9.3102C7.57685 9.56079 6.96684 9.953 6.45996 10.46L3.45996 13.46C2.54917 14.403 2.04519 15.666 2.05659 16.977C2.06798 18.288 2.59382 19.5421 3.52086 20.4691C4.4479 21.3961 5.70197 21.922 7.01295 21.9334C8.32393 21.9448 9.58694 21.4408 10.53 20.53L12.24 18.82" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                UTM tracking applied from <strong>{selectedCampaign.name}</strong>
+              </div>
             )}
           </div>
 

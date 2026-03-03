@@ -4,6 +4,7 @@ import CampaignColorPicker from './CampaignColorPicker';
 import DatePicker from './DatePicker';
 import ContentLabelsDropdown from './ContentLabelsDropdown';
 import UTMParameterRow from './UTMParameterRow';
+import { useClientConfig } from '../contexts/ClientConfigContext';
 
 const MAX_NAME_LENGTH = 100;
 const DEFAULT_COLOR = '#4338CA';
@@ -57,6 +58,23 @@ const CampaignDialog = ({
   const isEditMode = mode === 'edit';
   const today = selectedDate || new Date();
 
+  const clientConfig = useClientConfig();
+  const utmDefaults = clientConfig?.defaultUtmSettings ?? {
+    linkTrackingEnabled: false,
+    utmSourceMode: 'social-channel-id',
+    utmSourceValue: '',
+    utmSourceEnabled: true,
+    utmMediumMode: 'none',
+    utmMediumValue: '',
+    utmMediumEnabled: false,
+    utmCampaignMode: 'none',
+    utmCampaignValue: '',
+    utmCampaignEnabled: false,
+    utmContentMode: 'none',
+    utmContentValue: '',
+    utmContentEnabled: false,
+  };
+
   // Determine initial values based on mode
   const getInitialValue = (editField, initialField, defaultValue) => {
     if (isEditMode && campaignData) return campaignData[editField] ?? defaultValue;
@@ -98,25 +116,25 @@ const CampaignDialog = ({
 
   // Link tracking (UTM) toggle state
   const [linkTrackingEnabled, setLinkTrackingEnabled] = useState(
-    getInitialValue('linkTrackingEnabled', 'linkTrackingEnabled', false)
+    getInitialValue('linkTrackingEnabled', 'linkTrackingEnabled', utmDefaults.linkTrackingEnabled)
   );
 
-  // UTM Preset Builder state (mode + custom value + enabled per param)
-  const [utmSourceMode, setUtmSourceMode] = useState('social-channel-id');
-  const [utmSourceValue, setUtmSourceValue] = useState('');
-  const [utmSourceEnabled, setUtmSourceEnabled] = useState(true);
+  // UTM Preset Builder state — initialised from campaignData when available (edit mode)
+  const [utmSourceMode, setUtmSourceMode] = useState(getInitialValue('utmSourceMode', 'utmSourceMode', utmDefaults.utmSourceMode));
+  const [utmSourceValue, setUtmSourceValue] = useState(getInitialValue('utmSourceValue', 'utmSourceValue', utmDefaults.utmSourceValue));
+  const [utmSourceEnabled, setUtmSourceEnabled] = useState(getInitialValue('utmSourceEnabled', 'utmSourceEnabled', utmDefaults.utmSourceEnabled));
   const [utmSourceTouched, setUtmSourceTouched] = useState(false);
-  const [utmMediumMode, setUtmMediumMode] = useState('none');
-  const [utmMediumValue, setUtmMediumValue] = useState('');
-  const [utmMediumEnabled, setUtmMediumEnabled] = useState(false);
+  const [utmMediumMode, setUtmMediumMode] = useState(getInitialValue('utmMediumMode', 'utmMediumMode', utmDefaults.utmMediumMode));
+  const [utmMediumValue, setUtmMediumValue] = useState(getInitialValue('utmMediumValue', 'utmMediumValue', utmDefaults.utmMediumValue));
+  const [utmMediumEnabled, setUtmMediumEnabled] = useState(getInitialValue('utmMediumEnabled', 'utmMediumEnabled', utmDefaults.utmMediumEnabled));
   const [utmMediumTouched, setUtmMediumTouched] = useState(false);
-  const [utmCampaignMode, setUtmCampaignMode] = useState('none');
-  const [utmCampaignValue, setUtmCampaignValue] = useState('');
-  const [utmCampaignEnabled, setUtmCampaignEnabled] = useState(false);
+  const [utmCampaignMode, setUtmCampaignMode] = useState(getInitialValue('utmCampaignMode', 'utmCampaignMode', utmDefaults.utmCampaignMode));
+  const [utmCampaignValue, setUtmCampaignValue] = useState(getInitialValue('utmCampaignValue', 'utmCampaignValue', utmDefaults.utmCampaignValue));
+  const [utmCampaignEnabled, setUtmCampaignEnabled] = useState(getInitialValue('utmCampaignEnabled', 'utmCampaignEnabled', utmDefaults.utmCampaignEnabled));
   const [utmCampaignTouched, setUtmCampaignTouched] = useState(false);
-  const [utmContentMode, setUtmContentMode] = useState('none');
-  const [utmContentValue, setUtmContentValue] = useState('');
-  const [utmContentEnabled, setUtmContentEnabled] = useState(false);
+  const [utmContentMode, setUtmContentMode] = useState(getInitialValue('utmContentMode', 'utmContentMode', utmDefaults.utmContentMode));
+  const [utmContentValue, setUtmContentValue] = useState(getInitialValue('utmContentValue', 'utmContentValue', utmDefaults.utmContentValue));
+  const [utmContentEnabled, setUtmContentEnabled] = useState(getInitialValue('utmContentEnabled', 'utmContentEnabled', utmDefaults.utmContentEnabled));
   const [utmContentTouched, setUtmContentTouched] = useState(false);
 
   // UTM validation warning modal state
@@ -399,19 +417,19 @@ const CampaignDialog = ({
       uniqueId !== '' ||
       selectedLabels.length > 0 ||
       !isBriefEmpty ||
-      linkTrackingEnabled !== false ||
-      utmSourceMode !== 'social-channel-id' ||
-      utmSourceValue !== '' ||
-      utmSourceEnabled !== true ||
-      utmMediumMode !== 'none' ||
-      utmMediumValue !== '' ||
-      utmMediumEnabled !== false ||
-      utmCampaignMode !== 'none' ||
-      utmCampaignValue !== '' ||
-      utmCampaignEnabled !== false ||
-      utmContentMode !== 'none' ||
-      utmContentValue !== '' ||
-      utmContentEnabled !== false
+      linkTrackingEnabled !== utmDefaults.linkTrackingEnabled ||
+      utmSourceMode !== utmDefaults.utmSourceMode ||
+      utmSourceValue !== utmDefaults.utmSourceValue ||
+      utmSourceEnabled !== utmDefaults.utmSourceEnabled ||
+      utmMediumMode !== utmDefaults.utmMediumMode ||
+      utmMediumValue !== utmDefaults.utmMediumValue ||
+      utmMediumEnabled !== utmDefaults.utmMediumEnabled ||
+      utmCampaignMode !== utmDefaults.utmCampaignMode ||
+      utmCampaignValue !== utmDefaults.utmCampaignValue ||
+      utmCampaignEnabled !== utmDefaults.utmCampaignEnabled ||
+      utmContentMode !== utmDefaults.utmContentMode ||
+      utmContentValue !== utmDefaults.utmContentValue ||
+      utmContentEnabled !== utmDefaults.utmContentEnabled
     );
   }, [isEditMode, name, color, startDate, endDate, selectedLabels, briefContent, uniqueId, isBriefEmpty, linkTrackingEnabled, utmSourceMode, utmSourceValue, utmSourceEnabled, utmMediumMode, utmMediumValue, utmMediumEnabled, utmCampaignMode, utmCampaignValue, utmCampaignEnabled, utmContentMode, utmContentValue, utmContentEnabled]);
 
