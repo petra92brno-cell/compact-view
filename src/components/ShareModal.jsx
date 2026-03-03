@@ -12,14 +12,14 @@ const SHARE_OPTIONS = [
 const SUGGESTED_USER_IDS = ['u1', 'u2', 'u3', 'u11', 'u26'];
 const SUGGESTED_TEAM_IDS = ['team-gryffindor', 'team-slytherin', 'team-ravenclaw'];
 
-const QUICK_HINT_IDS = ['u2', 'team-gryffindor'];
+const QUICK_HINT_IDS = ['u2', 'u3', 'team-gryffindor'];
 
 const CURRENT_USER_ID = 'u1';
 const CREATOR_ID = 'u2';
 
 const RECENTLY_USED_IDS = [
-  'team-gryffindor', 'u2', 'u1', 'u3', 'team-slytherin',
-  'u11', 'u26', 'u19', 'team-ravenclaw', 'u34',
+  'u3', 'u11', 'team-gryffindor', 'u2', 'u1', 'team-slytherin',
+  'u26', 'u19', 'team-ravenclaw', 'u34',
 ];
 
 const IconTeam = () => (
@@ -93,7 +93,6 @@ const GLOBAL_PERMISSIONS = [
 const DETAIL_PERMISSIONS = [
   { value: 'view', label: 'Can view' },
   { value: 'edit', label: 'Can edit' },
-  { value: 'remove', label: 'Remove' },
 ];
 
 const getTeamForUser = (user) => mockTeams.find((t) => t.id === user.teamId);
@@ -104,7 +103,7 @@ const getInitials = (name) => {
   return name.slice(0, 2).toUpperCase();
 };
 
-const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption = 'private', initialGlobalPermission = 'view', initialInvitedUsers = [] }) => {
+const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption = 'private', initialGlobalPermission = 'view', initialInvitedUsers = [], initialAccessList = [] }) => {
   const [selectedOption, setSelectedOption] = useState(initialOption);
   const [globalPermission, setGlobalPermission] = useState(initialGlobalPermission);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -113,6 +112,7 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(0);
   const [showDetailView, setShowDetailView] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
   const menuRef = useRef(null);
   const triggerRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -137,14 +137,12 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
   const [sendMessage, setSendMessage] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [accessList, setAccessList] = useState(() => {
+    if (initialAccessList && initialAccessList.length > 0) {
+      return initialAccessList;
+    }
     const initialEntries = [
-      { id: 'team-gryffindor', permission: 'edit' },
-      { id: 'u3', permission: 'view' },
       { id: CURRENT_USER_ID, permission: 'view' },
       { id: CREATOR_ID, permission: 'view' },
-      { id: 'u11', permission: 'view' },
-      { id: 'u26', permission: 'view' },
-      { id: 'u5', permission: 'view' },
     ];
     return initialEntries.map(({ id, permission }) => ({
       ...allItemsById.get(id),
@@ -187,6 +185,7 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
       setShowDetailView(true);
       return;
     }
+    
     setInvitedUsers((prev) => {
       if (prev.some((i) => i.id === item.id)) return prev;
       return [...prev, item];
@@ -217,26 +216,42 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
     const q = searchQuery.trim();
 
     if (q === '') {
-      const recent = recentlyUsedItems;
+      const recent = recentlyUsedItems.filter((it) => !isAlreadyInvited(it.id));
       if (recent.length === 0) return [];
       const items = [{ type: 'header', label: 'RECENTLY USED' }];
       recent.forEach((it) =>
-        items.push({ type: it._type, data: it, isDisabled: isAlreadyInvited(it.id) })
+        items.push({ type: it._type, data: it, isDisabled: false })
       );
       return items;
     }
 
-    const teams = mockTeams.filter((t) => matchesQuery(t.name));
-    const users = mockUsers.filter((u) => matchesQuery(u.name));
+    // Check if query matches a user ID or team ID and auto-add that user/team
+    const userById = mockUsers.find((u) => u.id === q || u.id === `u${q}` || u.email === q);
+    const teamById = mockTeams.find((t) => t.id === q || t.id === `team-${q}`);
+    
+    if (userById && !isAlreadyInvited(userById.id)) {
+      handleAddItem(userById);
+      setSearchQuery('');
+      return [];
+    }
+    
+    if (teamById && !isAlreadyInvited(teamById.id)) {
+      handleAddItem(teamById);
+      setSearchQuery('');
+      return [];
+    }
+
+    const teams = mockTeams.filter((t) => matchesQuery(t.name) && !isAlreadyInvited(t.id));
+    const users = mockUsers.filter((u) => matchesQuery(u.name) && !isAlreadyInvited(u.id));
 
     const items = [];
     if (teams.length > 0) {
       items.push({ type: 'header', label: 'TEAM' });
-      teams.forEach((t) => items.push({ type: 'team', data: t, isDisabled: isAlreadyInvited(t.id) }));
+      teams.forEach((t) => items.push({ type: 'team', data: t, isDisabled: false }));
     }
     if (users.length > 0) {
       items.push({ type: 'header', label: 'USERS' });
-      users.forEach((u) => items.push({ type: 'user', data: u, isDisabled: isAlreadyInvited(u.id) }));
+      users.forEach((u) => items.push({ type: 'user', data: u, isDisabled: false }));
     }
     return items;
   };
@@ -247,30 +262,46 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
   const buildDetailDropdownItems = () => {
     const q = detailSearchQuery.trim();
     if (q === '') {
-      const recent = recentlyUsedItems;
+      const recent = recentlyUsedItems.filter((it) => !isAlreadyInvited(it.id));
       if (recent.length === 0) return [];
       const items = [{ type: 'header', label: 'RECENTLY USED' }];
-      recent.forEach((it) => items.push({ type: it._type, data: it, isDisabled: isAlreadyInvited(it.id) }));
+      recent.forEach((it) => items.push({ type: it._type, data: it, isDisabled: false }));
       return items;
     }
+
+    // Check if query matches a user ID or team ID and auto-add that user/team
+    const userById = mockUsers.find((u) => u.id === q || u.id === `u${q}` || u.email === q);
+    const teamById = mockTeams.find((t) => t.id === q || t.id === `team-${q}`);
+    
+    if (userById && !isAlreadyInvited(userById.id)) {
+      handleDetailAddItem(userById);
+      setDetailSearchQuery('');
+      return [];
+    }
+    
+    if (teamById && !isAlreadyInvited(teamById.id)) {
+      handleDetailAddItem(teamById);
+      setDetailSearchQuery('');
+      return [];
+    }
+
     const matchesQ = (name) => name.toLowerCase().includes(q.toLowerCase());
-    const teams = mockTeams.filter((t) => matchesQ(t.name));
-    const users = mockUsers.filter((u) => matchesQ(u.name));
+    const teams = mockTeams.filter((t) => matchesQ(t.name) && !isAlreadyInvited(t.id));
+    const users = mockUsers.filter((u) => matchesQ(u.name) && !isAlreadyInvited(u.id));
     const items = [];
     if (teams.length > 0) {
       items.push({ type: 'header', label: 'TEAM' });
-      teams.forEach((t) => items.push({ type: 'team', data: t, isDisabled: isAlreadyInvited(t.id) }));
+      teams.forEach((t) => items.push({ type: 'team', data: t, isDisabled: false }));
     }
     if (users.length > 0) {
       items.push({ type: 'header', label: 'USERS' });
-      users.forEach((u) => items.push({ type: 'user', data: u, isDisabled: isAlreadyInvited(u.id) }));
+      users.forEach((u) => items.push({ type: 'user', data: u, isDisabled: false }));
     }
     return items;
   };
 
   useEffect(() => {
-    const firstNav = selectableItems.findIndex((it) => !it.isDisabled);
-    setHighlightIndex(firstNav === -1 ? 0 : firstNav);
+    setHighlightIndex(0);
   }, [searchQuery, invitedUsers.length]);
 
   useEffect(() => {
@@ -286,9 +317,7 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
     return () => document.removeEventListener('mousedown', handleClickOutsideSearch);
   }, [isSearchFocused]);
 
-  const navigableIndices = selectableItems
-    .map((item, idx) => (!item.isDisabled ? idx : -1))
-    .filter((idx) => idx !== -1);
+  const navigableIndices = selectableItems.map((item, idx) => idx);
 
   const handleSearchKeyDown = (e) => {
     if (!isSearchFocused || navigableIndices.length === 0) return;
@@ -312,7 +341,7 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const item = selectableItems[highlightIndex];
-      if (item && !item.isDisabled) {
+      if (item) {
         handleAddItem(item.data);
         setSearchQuery('');
       }
@@ -356,9 +385,7 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
 
   useEffect(() => {
     if (!showDetailView) return;
-    const dItems = buildDetailDropdownItems().filter((i) => i.type !== 'header');
-    const firstNav = dItems.findIndex((it) => !it.isDisabled);
-    setDetailHighlightIndex(firstNav === -1 ? 0 : firstNav);
+    setDetailHighlightIndex(0);
   }, [detailSearchQuery, detailItems.length]);
 
   useEffect(() => {
@@ -412,6 +439,16 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openAccessDropdownId]);
 
+  // Track changes to enable/disable Save button
+  useEffect(() => {
+    const optionChanged = selectedOption !== initialOption;
+    const permissionChanged = globalPermission !== initialGlobalPermission;
+    const usersChanged = JSON.stringify(invitedUsers) !== JSON.stringify(initialInvitedUsers);
+    const accessChanged = JSON.stringify(accessList) !== JSON.stringify(initialAccessList);
+    
+    setHasChanges(optionChanged || permissionChanged || usersChanged || accessChanged);
+  }, [selectedOption, globalPermission, invitedUsers, accessList, initialOption, initialGlobalPermission, initialInvitedUsers, initialAccessList]);
+
   const displayName = campaignName.trim() || 'campaign';
 
   const handleBackFromDetail = () => {
@@ -433,15 +470,20 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
           _type: di.memberIds !== undefined ? 'team' : 'user',
           permission: detailPermission,
         }));
-      setAccessList((prev) => [...prev, ...newAccessItems]);
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 2000);
+      
+      const updatedAccessList = [...accessList, ...newAccessItems];
+      setAccessList(updatedAccessList);
 
       if (sendMessage && messageText.trim()) {
         const peopleNames = detailItems.map((item) => item.name).join(', ');
         console.log(`Sending message: ${messageText.trim()} to: ${peopleNames}`);
       }
+      
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 2000);
     }
+    
+    // Clear temporary states
     setInvitedUsers([]);
     setSearchQuery('');
     setDetailItems([]);
@@ -454,15 +496,16 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
   };
 
   const handleAccessPermissionChange = (itemId, newPermission) => {
-    if (newPermission === 'remove') {
-      setAccessList((prev) => prev.filter((item) => item.id !== itemId));
-    } else {
-      setAccessList((prev) =>
-        prev.map((item) =>
-          item.id === itemId ? { ...item, permission: newPermission } : item
-        )
-      );
-    }
+    setAccessList((prev) =>
+      prev.map((item) =>
+        item.id === itemId ? { ...item, permission: newPermission } : item
+      )
+    );
+    setOpenAccessDropdownId(null);
+  };
+
+  const handleRemoveFromAccessList = (itemId) => {
+    setAccessList((prev) => prev.filter((item) => item.id !== itemId));
     setOpenAccessDropdownId(null);
   };
 
@@ -547,31 +590,20 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                     onChange={(e) => setDetailSearchQuery(e.target.value)}
                     onFocus={() => setDetailSearchFocused(true)}
                     onKeyDown={(e) => {
-                      const navIndices = dSelectableItems
-                        .map((it, i) => (!it.isDisabled ? i : -1))
-                        .filter((i) => i !== -1);
-                      if (navIndices.length === 0) {
+                      if (dSelectableItems.length === 0) {
                         if (e.key === 'Escape') setDetailSearchFocused(false);
                         return;
                       }
                       if (e.key === 'ArrowDown') {
                         e.preventDefault();
-                        setDetailHighlightIndex((prev) => {
-                          const cur = navIndices.indexOf(prev);
-                          const next = cur === -1 ? 0 : (cur + 1) % navIndices.length;
-                          return navIndices[next];
-                        });
+                        setDetailHighlightIndex((prev) => (prev + 1) % dSelectableItems.length);
                       } else if (e.key === 'ArrowUp') {
                         e.preventDefault();
-                        setDetailHighlightIndex((prev) => {
-                          const cur = navIndices.indexOf(prev);
-                          const next = cur === -1 ? navIndices.length - 1 : (cur - 1 + navIndices.length) % navIndices.length;
-                          return navIndices[next];
-                        });
+                        setDetailHighlightIndex((prev) => (prev - 1 + dSelectableItems.length) % dSelectableItems.length);
                       } else if (e.key === 'Enter') {
                         e.preventDefault();
                         const sel = dSelectableItems[detailHighlightIndex];
-                        if (sel && !sel.isDisabled) handleDetailAddItem(sel.data);
+                        if (sel) handleDetailAddItem(sel.data);
                       } else if (e.key === 'Escape') {
                         setDetailSearchFocused(false);
                       }
@@ -597,13 +629,9 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                       <li key={perm.value}>
                         <button
                           type="button"
-                          className={`share-modal__detail-access-option${perm.value === 'remove' ? ' share-modal__detail-access-option--remove' : ''}${perm.value === detailPermission && perm.value !== 'remove' ? ' share-modal__detail-access-option--selected' : ''}`}
+                          className={`share-modal__detail-access-option${perm.value === detailPermission ? ' share-modal__detail-access-option--selected' : ''}`}
                           onClick={() => {
-                            if (perm.value === 'remove') {
-                              setDetailItems([]);
-                            } else {
-                              setDetailPermission(perm.value);
-                            }
+                            setDetailPermission(perm.value);
                             setDetailAccessOpen(false);
                           }}
                         >
@@ -642,11 +670,9 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
 
                     const selectableIdx = dSelectableItems.indexOf(item);
                     const isHighlighted = selectableIdx === detailHighlightIndex;
-                    const disabled = item.isDisabled;
                     const rowClass = [
                       'share-modal__popover-row',
-                      isHighlighted && !disabled ? 'share-modal__popover-row--highlighted' : '',
-                      disabled ? 'share-modal__popover-row--disabled' : '',
+                      isHighlighted ? 'share-modal__popover-row--highlighted' : '',
                     ].filter(Boolean).join(' ');
 
                     if (item.type === 'team') {
@@ -655,8 +681,8 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                         <div
                           key={team.id}
                           className={rowClass}
-                          onMouseEnter={disabled ? undefined : () => setDetailHighlightIndex(selectableIdx)}
-                          onClick={disabled ? undefined : () => handleDetailAddItem(team)}
+                          onMouseEnter={() => setDetailHighlightIndex(selectableIdx)}
+                          onClick={() => handleDetailAddItem(team)}
                         >
                           <span
                             className="share-modal__popover-team-avatar"
@@ -668,7 +694,6 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                             <span className="share-modal__popover-name">{team.name}</span>
                             <span className="share-modal__popover-meta">{team.memberIds.length} Members</span>
                           </span>
-                          {disabled && <span className="share-modal__popover-already">Already added</span>}
                         </div>
                       );
                     }
@@ -680,8 +705,8 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                       <div
                         key={user.id}
                         className={rowClass}
-                        onMouseEnter={disabled ? undefined : () => setDetailHighlightIndex(selectableIdx)}
-                        onClick={disabled ? undefined : () => handleDetailAddItem(user)}
+                        onMouseEnter={() => setDetailHighlightIndex(selectableIdx)}
+                        onClick={() => handleDetailAddItem(user)}
                       >
                         <span className="share-modal__popover-info">
                           <span className="share-modal__popover-name">{user.name}</span>
@@ -689,7 +714,6 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                             {roleName}{userTeam ? ` \u2022 ${userTeam.name}` : ''}
                           </span>
                         </span>
-                        {disabled && <span className="share-modal__popover-already">Already added</span>}
                       </div>
                     );
                   })
@@ -736,7 +760,7 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
               onClick={handleConfirmDetail}
               disabled={detailItems.length === 0}
             >
-              Add
+              Add and Save
             </button>
           </div>
         </div>
@@ -869,76 +893,78 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                       People added successfully
                     </div>
                   )}
-                  <div ref={inputWrapRef} className={`share-modal__input-wrap${isSearchFocused ? ' share-modal__input-wrap--focused' : ''}`}>
-                    <div className="share-modal__input-inner">
-                      {invitedUsers.map((item) => {
-                        const isTeam = item.memberIds !== undefined;
-                        return (
-                          <span key={item.id} className="share-modal__chip">
-                            {isTeam ? (
-                              <span
-                                className="share-modal__chip-color-avatar"
-                                style={{ background: item.color || '#6b7280' }}
+                  <div className="share-modal__search-and-tags-wrapper">
+                    <div ref={inputWrapRef} className={`share-modal__input-wrap${isSearchFocused ? ' share-modal__input-wrap--focused' : ''}`}>
+                      <div className="share-modal__input-inner">
+                        {invitedUsers.map((item) => {
+                          const isTeam = item.memberIds !== undefined;
+                          return (
+                            <span key={item.id} className="share-modal__chip">
+                              {isTeam ? (
+                                <span
+                                  className="share-modal__chip-color-avatar"
+                                  style={{ background: item.color || '#6b7280' }}
+                                >
+                                  {item.name.charAt(0)}
+                                </span>
+                              ) : (
+                                <span className="share-modal__chip-initials-avatar">
+                                  {getInitials(item.name)}
+                                </span>
+                              )}
+                              <span className="share-modal__chip-name">{item.name}</span>
+                              <button
+                                type="button"
+                                className="share-modal__chip-remove"
+                                onClick={() => handleRemoveItem(item.id)}
+                                aria-label={`Remove ${item.name}`}
                               >
-                                {item.name.charAt(0)}
-                              </span>
-                            ) : (
-                              <span className="share-modal__chip-initials-avatar">
-                                {getInitials(item.name)}
-                              </span>
-                            )}
-                            <span className="share-modal__chip-name">{item.name}</span>
-                            <button
-                              type="button"
-                              className="share-modal__chip-remove"
-                              onClick={() => handleRemoveItem(item.id)}
-                              aria-label={`Remove ${item.name}`}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                                <path d="M10 4L4 10M4 4l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                            </button>
-                          </span>
-                        );
-                      })}
-                      <div className="share-modal__search-input-row">
-                        <svg className="share-modal__search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="11" cy="11" r="8" />
-                          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                        </svg>
-                        <input
-                          type="text"
-                          className="share-modal__search-input"
-                          placeholder="Add comma separated to invite people or teams"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          onFocus={() => setIsSearchFocused(true)}
-                          onKeyDown={handleSearchKeyDown}
-                        />
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                  <path d="M10 4L4 10M4 4l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                              </button>
+                            </span>
+                          );
+                        })}
+                        <div className="share-modal__search-input-row">
+                          <svg className="share-modal__search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="11" cy="11" r="8" />
+                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                          </svg>
+                          <input
+                            type="text"
+                            className="share-modal__search-input"
+                            placeholder="Add comma separated to invite people or teams"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onFocus={() => setIsSearchFocused(true)}
+                            onKeyDown={handleSearchKeyDown}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {(() => {
-                    const visibleHints = quickHintItems.filter((it) => !isAlreadyInvited(it.id));
-                    return visibleHints.length > 0 && (
-                      <div className="share-modal__quick-hints">
-                        {visibleHints.map((it) => (
-                          <button
-                            key={it.id}
-                            type="button"
-                            className="share-modal__quick-hint"
-                            onClick={() => handleAddItem(it)}
-                          >
-                            {it._type === 'team' && (
-                              <IconTeam />
-                            )}
-                            <span className="share-modal__quick-hint-name">{it.name}</span>
-                          </button>
-                        ))}
-                      </div>
-                    );
-                  })()}
+                    {(() => {
+                      const visibleHints = quickHintItems.filter((it) => !isAlreadyInvited(it.id));
+                      return visibleHints.length > 0 && (
+                        <div className="share-modal__quick-hints">
+                          {visibleHints.map((it) => (
+                            <button
+                              key={it.id}
+                              type="button"
+                              className="share-modal__quick-hint"
+                              onClick={() => handleAddItem(it)}
+                            >
+                              {it._type === 'team' && (
+                                <IconTeam />
+                              )}
+                              <span className="share-modal__quick-hint-name">{it.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
 
                   {isSearchFocused && createPortal(
                     <div
@@ -967,11 +993,9 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                           const selectableIdx = selectableItems.indexOf(item);
                           const isHighlighted = selectableIdx === highlightIndex;
 
-                          const disabled = item.isDisabled;
                           const rowClass = [
                             'share-modal__popover-row',
-                            isHighlighted && !disabled ? 'share-modal__popover-row--highlighted' : '',
-                            disabled ? 'share-modal__popover-row--disabled' : '',
+                            isHighlighted ? 'share-modal__popover-row--highlighted' : '',
                           ].filter(Boolean).join(' ');
 
                           if (item.type === 'team') {
@@ -980,8 +1004,8 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                               <div
                                 key={team.id}
                                 className={rowClass}
-                                onMouseEnter={disabled ? undefined : () => setHighlightIndex(selectableIdx)}
-                                onClick={disabled ? undefined : () => {
+                                onMouseEnter={() => setHighlightIndex(selectableIdx)}
+                                onClick={() => {
                                   handleAddItem(team);
                                   setSearchQuery('');
                                 }}
@@ -996,7 +1020,6 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                                   <span className="share-modal__popover-name">{team.name}</span>
                                   <span className="share-modal__popover-meta">{team.memberIds.length} Members</span>
                                 </span>
-                                {disabled && <span className="share-modal__popover-already">Already added</span>}
                               </div>
                             );
                           }
@@ -1008,8 +1031,8 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                             <div
                               key={user.id}
                               className={rowClass}
-                              onMouseEnter={disabled ? undefined : () => setHighlightIndex(selectableIdx)}
-                              onClick={disabled ? undefined : () => {
+                              onMouseEnter={() => setHighlightIndex(selectableIdx)}
+                              onClick={() => {
                                 handleAddItem(user);
                                 setSearchQuery('');
                               }}
@@ -1020,7 +1043,6 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                                   {roleName}{userTeam ? ` \u2022 ${userTeam.name}` : ''}
                                 </span>
                               </span>
-                              {disabled && <span className="share-modal__popover-already">Already added</span>}
                             </div>
                           );
                         })
@@ -1029,21 +1051,60 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                     document.body
                   )}
 
-                  {accessList.length > 0 && (
+                  {(accessList.length > 0 || invitedUsers.length > 0) && (
                     <div className="share-modal__access-section">
                       <div className="share-modal__access-header">USERS AND TEAM WITH ACCESS</div>
                       <div className="share-modal__access-list">
                         {(() => {
-                          const creatorItem = accessList.find((item) => item.id === CREATOR_ID);
-                          const normalItems = accessList.filter((item) => item.id !== CREATOR_ID);
-                          const visibleItems = normalItems.slice(0, 3);
-                          const hiddenCount = normalItems.length > 3 ? normalItems.length - 3 : 0;
+                          // Combine accessList and invitedUsers for display
+                          const invitedWithPermissions = invitedUsers.map((user) => ({
+                            ...user,
+                            _type: user.memberIds !== undefined ? 'team' : 'user',
+                            permission: 'view',
+                          }));
+                          
+                          // Merge lists, avoiding duplicates
+                          const seenIds = new Set();
+                          const combinedList = [];
+                          
+                          // Add all accessList items first
+                          accessList.forEach(item => {
+                            if (!seenIds.has(item.id)) {
+                              combinedList.push(item);
+                              seenIds.add(item.id);
+                            }
+                          });
+                          
+                          // Add invitedUsers that aren't already in accessList
+                          invitedWithPermissions.forEach(item => {
+                            if (!seenIds.has(item.id)) {
+                              combinedList.push(item);
+                              seenIds.add(item.id);
+                            }
+                          });
+                          
+                          // Separate creator from other items
+                          const creatorItem = combinedList.find((item) => item.id === CREATOR_ID);
+                          const currentUserItem = combinedList.find((item) => item.id === CURRENT_USER_ID);
+                          const otherItems = combinedList.filter((item) => 
+                            item.id !== CREATOR_ID && item.id !== CURRENT_USER_ID
+                          );
+                          
+                          // Build display order: Creator first (if exists), then YOU, then others
+                          const orderedItems = [];
+                          if (creatorItem) orderedItems.push(creatorItem);
+                          if (currentUserItem) orderedItems.push(currentUserItem);
+                          orderedItems.push(...otherItems);
+                          
+                          const visibleItems = orderedItems.slice(0, 4); // Show more items to see the full list
+                          const hiddenCount = orderedItems.length > 4 ? orderedItems.length - 4 : 0;
 
                           return (
                             <>
                               {visibleItems.map((item) => {
                                 const isTeam = item._type === 'team' || item.memberIds !== undefined;
                                 const isCurrentUser = item.id === CURRENT_USER_ID;
+                                const isCreator = item.id === CREATOR_ID;
                                 const memberCount = isTeam ? item.memberIds?.length : null;
 
                                 return (
@@ -1064,61 +1125,61 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                                       <span className="share-modal__access-name">
                                         {item.name}
                                         {isCurrentUser && <span className="share-modal__access-you-badge">YOU</span>}
+                                        {isCreator && <span className="share-modal__access-creator-label">(Creator)</span>}
                                       </span>
                                       {isTeam && memberCount != null && (
                                         <span className="share-modal__access-meta">{memberCount} members</span>
                                       )}
                                     </div>
-                                    <div
-                                      className="share-modal__access-dropdown"
-                                      ref={openAccessDropdownId === item.id ? accessDropdownRef : null}
-                                    >
-                                      <button
-                                        type="button"
-                                        className="share-modal__access-dropdown-trigger"
-                                        onClick={() => setOpenAccessDropdownId((prev) => (prev === item.id ? null : item.id))}
+                                    {!isCreator && (
+                                      <div
+                                        className="share-modal__access-dropdown"
+                                        ref={openAccessDropdownId === item.id ? accessDropdownRef : null}
                                       >
-                                        {item.permission === 'edit' ? 'Can edit' : 'Can view'}
-                                        <svg className="share-modal__dropdown-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                          <path d="M6 9l6 6 6-6" />
-                                        </svg>
-                                      </button>
-                                      {openAccessDropdownId === item.id && (
-                                        <ul className="share-modal__access-dropdown-menu">
-                                          {DETAIL_PERMISSIONS.map((perm) => (
-                                            <li key={perm.value}>
+                                        <button
+                                          type="button"
+                                          className="share-modal__access-dropdown-trigger"
+                                          onClick={() => setOpenAccessDropdownId((prev) => (prev === item.id ? null : item.id))}
+                                        >
+                                          {item.permission === 'edit' ? 'Can edit' : 'Can view'}
+                                          <svg className="share-modal__dropdown-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M6 9l6 6 6-6" />
+                                          </svg>
+                                        </button>
+                                        {openAccessDropdownId === item.id && (
+                                          <ul className="share-modal__access-dropdown-menu">
+                                            {DETAIL_PERMISSIONS.map((perm) => (
+                                              <li key={perm.value}>
+                                                <button
+                                                  type="button"
+                                                  className={`share-modal__access-dropdown-option${perm.value === item.permission ? ' share-modal__access-dropdown-option--selected' : ''}`}
+                                                  onClick={() => handleAccessPermissionChange(item.id, perm.value)}
+                                                >
+                                                  {perm.label}
+                                                </button>
+                                              </li>
+                                            ))}
+                                            <li className="share-modal__access-dropdown-separator"></li>
+                                            <li>
                                               <button
                                                 type="button"
-                                                className={`share-modal__access-dropdown-option${perm.value === 'remove' ? ' share-modal__access-dropdown-option--remove' : ''}${perm.value === item.permission && perm.value !== 'remove' ? ' share-modal__access-dropdown-option--selected' : ''}`}
-                                                onClick={() => handleAccessPermissionChange(item.id, perm.value)}
+                                                className="share-modal__access-dropdown-option share-modal__access-dropdown-option--remove"
+                                                onClick={() => handleRemoveFromAccessList(item.id)}
                                               >
-                                                {perm.label}
+                                                Remove
                                               </button>
                                             </li>
-                                          ))}
-                                        </ul>
-                                      )}
-                                    </div>
+                                          </ul>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                 );
                               })}
 
-                              {creatorItem && (
-                                <div className="share-modal__access-row">
-                                  <span className="share-modal__access-avatar share-modal__access-avatar--user">
-                                    {getInitials(creatorItem.name)}
-                                  </span>
-                                  <div className="share-modal__access-info">
-                                    <span className="share-modal__access-name">
-                                      {creatorItem.name} <span className="share-modal__access-creator-label">(Creator)</span>
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-
                               {hiddenCount > 0 && (
                                 <div className="share-modal__access-overflow">
-                                  <span className="share-modal__access-overflow-count">+{hiddenCount} others</span> have access to this view. This board is also shared with users or teams you can&apos;t see. Contact an account admin if you need details.
+                                  <span className="share-modal__access-overflow-count">+{hiddenCount} others</span> have access to this campaign. Additional teams and users may also have access but are not visible due to your account permissions. Contact your account admin for complete access details.
                                 </div>
                               )}
                             </>
@@ -1138,8 +1199,28 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
           <button type="button" className="share-modal__btn share-modal__btn--secondary" onClick={onClose}>
             Cancel
           </button>
-          <button type="button" className="share-modal__btn share-modal__btn--primary" onClick={() => { if (onSave) onSave(selectedOption, invitedUsers, globalPermission); onClose(); }}>
-            Done
+          <button 
+            type="button" 
+            className="share-modal__btn share-modal__btn--primary" 
+            onClick={() => { 
+              if (onSave) {
+                // Merge invitedUsers into accessList before saving
+                const newAccessItems = invitedUsers
+                  .filter((user) => !accessList.some((a) => a.id === user.id))
+                  .map((user) => ({
+                    ...user,
+                    _type: user.memberIds !== undefined ? 'team' : 'user',
+                    permission: 'view',
+                  }));
+                
+                const finalAccessList = [...accessList, ...newAccessItems];
+                onSave(selectedOption, [], globalPermission, finalAccessList);
+              }
+              onClose(); 
+            }}
+            disabled={!hasChanges}
+          >
+            Save
           </button>
         </div>
       </div>
