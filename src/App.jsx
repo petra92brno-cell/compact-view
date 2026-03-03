@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import LeftSidebar from './components/LeftSidebar';
 import MiddleSidebar from './components/MiddleSidebar';
 import ContentArea from './components/ContentArea';
@@ -18,20 +19,23 @@ import {
   MERCEDES_MOCK_IMAGES,
 } from './data/mockDataMercedes';
 import { ClientConfigContext } from './contexts/ClientConfigContext';
+import { hashVersion, unhashVersion } from './utils/versionHash';
 import './App.css';
 
 const VERSION_STORAGE_KEY = 'compact-view-prototype-version';
 
 function App() {
+  const navigate = useNavigate();
   const [activeVersion, setActiveVersion] = useState(() => {
-    const urlParam = new URLSearchParams(window.location.search).get('version');
-    if (urlParam) {
-      sessionStorage.setItem(VERSION_STORAGE_KEY, urlParam);
-      return urlParam;
+    const urlHash = new URLSearchParams(window.location.search).get('version');
+    if (urlHash) {
+      const resolved = unhashVersion(urlHash);
+      sessionStorage.setItem(VERSION_STORAGE_KEY, resolved);
+      return resolved;
     }
     const stored = sessionStorage.getItem(VERSION_STORAGE_KEY) || 'v1';
     const url = new URL(window.location.href);
-    url.searchParams.set('version', stored);
+    url.searchParams.set('version', hashVersion(stored));
     window.history.replaceState(null, '', url.toString());
     return stored;
   });
@@ -39,12 +43,17 @@ function App() {
   const [currentView, setCurrentView] = useState('main'); // 'main' or 'createPost'
 
   const handleVersionChange = useCallback((versionId) => {
+    if (versionId === 'v1_share') {
+      sessionStorage.setItem(VERSION_STORAGE_KEY, versionId);
+      navigate('/v1-share');
+      return;
+    }
     setActiveVersion(versionId);
     sessionStorage.setItem(VERSION_STORAGE_KEY, versionId);
     const url = new URL(window.location.href);
-    url.searchParams.set('version', versionId);
+    url.searchParams.set('version', hashVersion(versionId));
     window.history.replaceState(null, '', url.toString());
-  }, []);
+  }, [navigate]);
 
   // Shared campaign state — single source of truth for Calendar + CreatePost
   // Initialise with the correct dataset for the current version
@@ -53,6 +62,14 @@ function App() {
       ? initialMercedesCampaigns
       : initialCampaigns
   );
+
+  // Redirect /?version=<v1_share hash> to /v1-share
+  useEffect(() => {
+    const urlHash = new URLSearchParams(window.location.search).get('version');
+    if (urlHash && unhashVersion(urlHash) === 'v1_share' && window.location.pathname === '/') {
+      navigate('/v1-share');
+    }
+  }, [navigate]);
 
   // When switching versions, reset campaigns to the appropriate dataset
   useEffect(() => {
