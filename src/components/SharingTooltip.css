@@ -132,6 +132,22 @@
   padding: 6px 16px;
 }
 
+/* Permission badge */
+.sharing-tooltip__permission {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--color-on-layer-secondary, #6B7280);
+  background: var(--color-layer-level-2, #F3F3F5);
+  border: 1px solid var(--color-border-secondary, rgba(0, 0, 0, 0.08));
+  border-radius: 4px;
+  padding: 2px 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 /* Team avatar */
 .sharing-tooltip__team-avatar {
   width: 32px;
@@ -171,6 +187,7 @@
   flex-direction: column;
   gap: 1px;
   min-width: 0;
+  flex: 1;
 }
 
 .sharing-tooltip__row-name {
@@ -194,6 +211,21 @@
   font-weight: 400;
   line-height: 16px;
   color: var(--color-on-layer-tertiary, #9D9DA0);
+}
+
+.sharing-tooltip__row-meta-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.sharing-tooltip__row-meta--hoverable {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.sharing-tooltip__row-meta--hoverable:hover {
+  color: var(--color-on-layer-secondary, #6B7280);
+  text-decoration: underline;
 }
 
 /* Placeholder (coming soon states) */

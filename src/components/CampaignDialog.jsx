@@ -178,6 +178,7 @@ const CampaignDialog = ({
   const [sharingType, setSharingType] = useState('private'); // 'private' | 'limited' | 'global'
   const [globalPermission, setGlobalPermission] = useState('view'); // 'view' | 'edit'
   const [sharedWith, setSharedWith] = useState([]); // invited users/teams for limited mode
+  const [accessList, setAccessList] = useState([]); // people with access and their permissions
   const [showShareModal, setShowShareModal] = useState(false);
   const [showSharingTooltip, setShowSharingTooltip] = useState(false);
 
@@ -680,6 +681,7 @@ const CampaignDialog = ({
                 <SharingTooltip
                   sharingType={sharingType}
                   sharedWith={sharedWith}
+                  accessList={accessList}
                   campaignId={campaignData?.id}
                   globalPermission={globalPermission}
                 />
@@ -1245,14 +1247,16 @@ const CampaignDialog = ({
         <ShareModal
           isOpen={showShareModal}
           onClose={() => setShowShareModal(false)}
-          onSave={(option, invited, permission) => {
+          onSave={(option, invited, permission, accessListData) => {
             setSharingType(option);
             setSharedWith(invited || []);
             if (permission) setGlobalPermission(permission);
+            if (accessListData) setAccessList(accessListData);
           }}
           initialOption={sharingType}
           initialGlobalPermission={globalPermission}
           initialInvitedUsers={sharedWith}
+          initialAccessList={accessList}
           campaignName={headerTitle}
         />
       )}

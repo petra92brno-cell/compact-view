@@ -1,8 +1,11 @@
 import React, { useState, useCallback } from 'react';
+import TeamMembersTooltip from './TeamMembersTooltip';
 import './SharingTooltip.css';
 
-const SharingTooltip = ({ sharingType, sharedWith = [], campaignId, globalPermission = 'view' }) => {
+const SharingTooltip = ({ sharingType, sharedWith = [], accessList = [], campaignId, globalPermission = 'view' }) => {
   const [copied, setCopied] = useState(false);
+  const [hoveredTeam, setHoveredTeam] = useState(null);
+  const [showTeamTooltip, setShowTeamTooltip] = useState(false);
 
   const handleCopyLink = useCallback((e) => {
     e.stopPropagation();
@@ -13,8 +16,10 @@ const SharingTooltip = ({ sharingType, sharedWith = [], campaignId, globalPermis
     });
   }, [campaignId]);
 
-  const teams = sharedWith.filter(item => item.memberIds !== undefined);
-  const users = sharedWith.filter(item => item.memberIds === undefined);
+  // Use accessList if available (contains permissions), otherwise fall back to sharedWith
+  const dataToShow = accessList.length > 0 ? accessList : sharedWith;
+  const teams = dataToShow.filter(item => item.memberIds !== undefined || item._type === 'team');
+  const users = dataToShow.filter(item => item.memberIds === undefined && item._type !== 'team');
 
   const copyButton = (
     <button
@@ -138,10 +143,33 @@ const SharingTooltip = ({ sharingType, sharedWith = [], campaignId, globalPermis
                 </span>
                 <div className="sharing-tooltip__row-info">
                   <span className="sharing-tooltip__row-name">{team.name}</span>
-                  <span className="sharing-tooltip__row-meta">
-                    {team.memberIds.length} Members
-                  </span>
+                  <div 
+                    className="sharing-tooltip__row-meta-wrapper"
+                    onMouseEnter={() => {
+                      setHoveredTeam(team);
+                      setShowTeamTooltip(true);
+                    }}
+                    onMouseLeave={() => {
+                      setShowTeamTooltip(false);
+                      setHoveredTeam(null);
+                    }}
+                  >
+                    <span className="sharing-tooltip__row-meta sharing-tooltip__row-meta--hoverable">
+                      {team.memberIds?.length || 0} Members
+                    </span>
+                    {showTeamTooltip && hoveredTeam?.id === team.id && (
+                      <TeamMembersTooltip 
+                        team={team} 
+                        isVisible={true}
+                      />
+                    )}
+                  </div>
                 </div>
+                {team.permission && (
+                  <span className="sharing-tooltip__permission">
+                    {team.permission === 'edit' ? 'Can edit' : 'Can view'}
+                  </span>
+                )}
               </div>
             ))}
             {users.map(user => (
@@ -152,6 +180,11 @@ const SharingTooltip = ({ sharingType, sharedWith = [], campaignId, globalPermis
                 <div className="sharing-tooltip__row-info">
                   <span className="sharing-tooltip__row-name">{user.name}</span>
                 </div>
+                {user.permission && (
+                  <span className="sharing-tooltip__permission">
+                    {user.permission === 'edit' ? 'Can edit' : 'Can view'}
+                  </span>
+                )}
               </div>
             ))}
           </>
