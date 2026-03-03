@@ -29,7 +29,11 @@ function App() {
       sessionStorage.setItem(VERSION_STORAGE_KEY, urlParam);
       return urlParam;
     }
-    return sessionStorage.getItem(VERSION_STORAGE_KEY) || 'v1';
+    const stored = sessionStorage.getItem(VERSION_STORAGE_KEY) || 'v1';
+    const url = new URL(window.location.href);
+    url.searchParams.set('version', stored);
+    window.history.replaceState(null, '', url.toString());
+    return stored;
   });
   const [activeTab, setActiveTab] = useState('Calendar');
   const [currentView, setCurrentView] = useState('main'); // 'main' or 'createPost'
@@ -37,6 +41,9 @@ function App() {
   const handleVersionChange = useCallback((versionId) => {
     setActiveVersion(versionId);
     sessionStorage.setItem(VERSION_STORAGE_KEY, versionId);
+    const url = new URL(window.location.href);
+    url.searchParams.set('version', versionId);
+    window.history.replaceState(null, '', url.toString());
   }, []);
 
   // Shared campaign state — single source of truth for Calendar + CreatePost
