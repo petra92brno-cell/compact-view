@@ -225,7 +225,7 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
       return items;
     }
 
-    // Check if query matches a user ID or team ID and auto-add that user/team
+    // Check if query matches a user ID or team ID exactly and auto-add (only if not already added)
     const userById = mockUsers.find((u) => u.id === q || u.id === `u${q}` || u.email === q);
     const teamById = mockTeams.find((t) => t.id === q || t.id === `team-${q}`);
     
@@ -241,23 +241,23 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
       return [];
     }
 
-    const teams = mockTeams.filter((t) => matchesQuery(t.name) && !isAlreadyInvited(t.id));
-    const users = mockUsers.filter((u) => matchesQuery(u.name) && !isAlreadyInvited(u.id));
+    const teams = mockTeams.filter((t) => matchesQuery(t.name));
+    const users = mockUsers.filter((u) => matchesQuery(u.name));
 
     const items = [];
     if (teams.length > 0) {
       items.push({ type: 'header', label: 'TEAM' });
-      teams.forEach((t) => items.push({ type: 'team', data: t, isDisabled: false }));
+      teams.forEach((t) => items.push({ type: 'team', data: t, isDisabled: isAlreadyInvited(t.id) }));
     }
     if (users.length > 0) {
       items.push({ type: 'header', label: 'USERS' });
-      users.forEach((u) => items.push({ type: 'user', data: u, isDisabled: false }));
+      users.forEach((u) => items.push({ type: 'user', data: u, isDisabled: isAlreadyInvited(u.id) }));
     }
     return items;
   };
 
   const dropdownItems = isSearchFocused ? buildDropdownItems() : [];
-  const selectableItems = dropdownItems.filter((i) => i.type !== 'header');
+  const selectableItems = dropdownItems.filter((i) => i.type !== 'header' && !i.isDisabled);
 
   const buildDetailDropdownItems = () => {
     const q = detailSearchQuery.trim();
@@ -269,7 +269,7 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
       return items;
     }
 
-    // Check if query matches a user ID or team ID and auto-add that user/team
+    // Check if query matches a user ID or team ID exactly and auto-add (only if not already added)
     const userById = mockUsers.find((u) => u.id === q || u.id === `u${q}` || u.email === q);
     const teamById = mockTeams.find((t) => t.id === q || t.id === `team-${q}`);
     
@@ -286,16 +286,16 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
     }
 
     const matchesQ = (name) => name.toLowerCase().includes(q.toLowerCase());
-    const teams = mockTeams.filter((t) => matchesQ(t.name) && !isAlreadyInvited(t.id));
-    const users = mockUsers.filter((u) => matchesQ(u.name) && !isAlreadyInvited(u.id));
+    const teams = mockTeams.filter((t) => matchesQ(t.name));
+    const users = mockUsers.filter((u) => matchesQ(u.name));
     const items = [];
     if (teams.length > 0) {
       items.push({ type: 'header', label: 'TEAM' });
-      teams.forEach((t) => items.push({ type: 'team', data: t, isDisabled: false }));
+      teams.forEach((t) => items.push({ type: 'team', data: t, isDisabled: isAlreadyInvited(t.id) }));
     }
     if (users.length > 0) {
       items.push({ type: 'header', label: 'USERS' });
-      users.forEach((u) => items.push({ type: 'user', data: u, isDisabled: false }));
+      users.forEach((u) => items.push({ type: 'user', data: u, isDisabled: isAlreadyInvited(u.id) }));
     }
     return items;
   };
@@ -515,7 +515,7 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
 
   if (showDetailView) {
     const dDropdownItems = detailSearchFocused ? buildDetailDropdownItems() : [];
-    const dSelectableItems = dDropdownItems.filter((i) => i.type !== 'header');
+    const dSelectableItems = dDropdownItems.filter((i) => i.type !== 'header' && !i.isDisabled);
 
     return (
       <div className="share-modal-overlay" onClick={onClose}>
@@ -669,10 +669,11 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                     }
 
                     const selectableIdx = dSelectableItems.indexOf(item);
-                    const isHighlighted = selectableIdx === detailHighlightIndex;
+                    const isHighlighted = !item.isDisabled && selectableIdx === detailHighlightIndex;
                     const rowClass = [
                       'share-modal__popover-row',
                       isHighlighted ? 'share-modal__popover-row--highlighted' : '',
+                      item.isDisabled ? 'share-modal__popover-row--disabled' : '',
                     ].filter(Boolean).join(' ');
 
                     if (item.type === 'team') {
@@ -681,8 +682,8 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                         <div
                           key={team.id}
                           className={rowClass}
-                          onMouseEnter={() => setDetailHighlightIndex(selectableIdx)}
-                          onClick={() => handleDetailAddItem(team)}
+                          onMouseEnter={() => !item.isDisabled && setDetailHighlightIndex(selectableIdx)}
+                          onClick={() => !item.isDisabled && handleDetailAddItem(team)}
                         >
                           <span
                             className="share-modal__popover-team-avatar"
@@ -694,6 +695,9 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                             <span className="share-modal__popover-name">{team.name}</span>
                             <span className="share-modal__popover-meta">{team.memberIds.length} Members</span>
                           </span>
+                          {item.isDisabled && (
+                            <span className="share-modal__popover-already-added">Already added</span>
+                          )}
                         </div>
                       );
                     }
@@ -705,8 +709,8 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                       <div
                         key={user.id}
                         className={rowClass}
-                        onMouseEnter={() => setDetailHighlightIndex(selectableIdx)}
-                        onClick={() => handleDetailAddItem(user)}
+                        onMouseEnter={() => !item.isDisabled && setDetailHighlightIndex(selectableIdx)}
+                        onClick={() => !item.isDisabled && handleDetailAddItem(user)}
                       >
                         <span className="share-modal__popover-info">
                           <span className="share-modal__popover-name">{user.name}</span>
@@ -714,6 +718,9 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                             {roleName}{userTeam ? ` \u2022 ${userTeam.name}` : ''}
                           </span>
                         </span>
+                        {item.isDisabled && (
+                          <span className="share-modal__popover-already-added">Already added</span>
+                        )}
                       </div>
                     );
                   })
@@ -991,11 +998,12 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                           }
 
                           const selectableIdx = selectableItems.indexOf(item);
-                          const isHighlighted = selectableIdx === highlightIndex;
+                          const isHighlighted = !item.isDisabled && selectableIdx === highlightIndex;
 
                           const rowClass = [
                             'share-modal__popover-row',
                             isHighlighted ? 'share-modal__popover-row--highlighted' : '',
+                            item.isDisabled ? 'share-modal__popover-row--disabled' : '',
                           ].filter(Boolean).join(' ');
 
                           if (item.type === 'team') {
@@ -1004,8 +1012,9 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                               <div
                                 key={team.id}
                                 className={rowClass}
-                                onMouseEnter={() => setHighlightIndex(selectableIdx)}
+                                onMouseEnter={() => !item.isDisabled && setHighlightIndex(selectableIdx)}
                                 onClick={() => {
+                                  if (item.isDisabled) return;
                                   handleAddItem(team);
                                   setSearchQuery('');
                                 }}
@@ -1020,6 +1029,9 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                                   <span className="share-modal__popover-name">{team.name}</span>
                                   <span className="share-modal__popover-meta">{team.memberIds.length} Members</span>
                                 </span>
+                                {item.isDisabled && (
+                                  <span className="share-modal__popover-already-added">Already added</span>
+                                )}
                               </div>
                             );
                           }
@@ -1031,8 +1043,9 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                             <div
                               key={user.id}
                               className={rowClass}
-                              onMouseEnter={() => setHighlightIndex(selectableIdx)}
+                              onMouseEnter={() => !item.isDisabled && setHighlightIndex(selectableIdx)}
                               onClick={() => {
+                                if (item.isDisabled) return;
                                 handleAddItem(user);
                                 setSearchQuery('');
                               }}
@@ -1043,6 +1056,9 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                                   {roleName}{userTeam ? ` \u2022 ${userTeam.name}` : ''}
                                 </span>
                               </span>
+                              {item.isDisabled && (
+                                <span className="share-modal__popover-already-added">Already added</span>
+                              )}
                             </div>
                           );
                         })

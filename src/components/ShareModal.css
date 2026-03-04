@@ -790,11 +790,17 @@
 
 .share-modal__popover-row--disabled {
   cursor: default;
-  opacity: 0.5;
   pointer-events: none;
 }
 
-.share-modal__popover-already {
+.share-modal__popover-row--disabled .share-modal__popover-name,
+.share-modal__popover-row--disabled .share-modal__popover-meta,
+.share-modal__popover-row--disabled .share-modal__popover-team-avatar {
+  opacity: 0.5;
+}
+
+.share-modal__popover-already,
+.share-modal__popover-already-added {
   font-family: 'Inter', sans-serif;
   font-size: 12px;
   font-weight: 400;
