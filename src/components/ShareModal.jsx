@@ -1096,8 +1096,7 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                           if (currentUserItem) orderedItems.push(currentUserItem);
                           orderedItems.push(...otherItems);
                           
-                          const visibleItems = orderedItems.slice(0, 4); // Show more items to see the full list
-                          const hiddenCount = orderedItems.length > 4 ? orderedItems.length - 4 : 0;
+                          const visibleItems = orderedItems;
 
                           return (
                             <>
@@ -1177,11 +1176,6 @@ const ShareModal = ({ isOpen, onClose, onSave, campaignName = '', initialOption 
                                 );
                               })}
 
-                              {hiddenCount > 0 && (
-                                <div className="share-modal__access-overflow">
-                                  <span className="share-modal__access-overflow-count">+{hiddenCount} others</span> have access to this campaign. Additional teams and users may also have access but are not visible due to your account permissions. Contact your account admin for complete access details.
-                                </div>
-                              )}
                             </>
                           );
                         })()}

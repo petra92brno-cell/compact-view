@@ -255,7 +255,7 @@
 
 /* Scrollable area for dynamic content only - keeps dropdown above footer */
 .share-modal__content-scroll {
-  overflow-y: auto;
+  overflow: hidden;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -269,6 +269,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2, 6px);
+  flex-shrink: 0;
 }
 
 .share-modal__dropdown-label {
@@ -415,6 +416,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3, 9px);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Banner (helper text with info icon) */
@@ -547,6 +551,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3, 9px);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Wrapper for search input and tags with reduced spacing */
@@ -554,6 +561,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2, 6px);
+  flex-shrink: 0;
 }
 
 .share-modal__input-wrap {
@@ -996,6 +1004,7 @@
   color: #2e7d32;
   text-align: center;
   animation: share-modal-toast-enter 0.2s ease-out;
+  flex-shrink: 0;
 }
 
 @keyframes share-modal-toast-enter {
@@ -1005,7 +1014,7 @@
 
 /* Access section */
 .share-modal__access-section {
-  margin-top: 16px;
+  margin-top: 0;
   padding: 16px;
   background: var(--color-layer-level-1, #ffffff);
   border: 1px solid var(--color-border-primary, rgba(0, 0, 0, 0.08));
@@ -1013,6 +1022,9 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .share-modal__access-header {
@@ -1190,19 +1202,4 @@
 .share-modal__access-dropdown-option--remove:hover {
   background: #ffebee;
   color: #c62828;
-}
-
-
-.share-modal__access-overflow {
-  padding: 12px 0 4px;
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 18px;
-  color: var(--color-on-layer-tertiary, #9d9da0);
-}
-
-.share-modal__access-overflow-count {
-  font-weight: 600;
-  color: var(--color-button-primary, #0c4bff);
 }
