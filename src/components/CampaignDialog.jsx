@@ -61,6 +61,7 @@ const CampaignDialog = ({
   const today = selectedDate || new Date();
 
   const clientConfig = useClientConfig();
+  const hideSharing = clientConfig?.hideSharing ?? false;
   const utmDefaults = clientConfig?.defaultUtmSettings ?? {
     linkTrackingEnabled: false,
     utmSourceMode: 'social-channel-id',
@@ -645,7 +646,7 @@ const CampaignDialog = ({
         {/* Right side */}
         <div className="campaign-dialog__header-right">
           {/* Share section: sharing badge + Share button */}
-          <div className="campaign-dialog__share-section">
+          {!hideSharing && <div className="campaign-dialog__share-section">
             <div
               className="sharing-tooltip-wrapper"
               onMouseEnter={() => setShowSharingTooltip(true)}
@@ -701,7 +702,7 @@ const CampaignDialog = ({
               </svg>
               Share
             </button>
-          </div>
+          </div>}
           {isEditMode && <div className="campaign-dialog__header-divider" aria-hidden="true" />}
           {isEditMode && (
             <button

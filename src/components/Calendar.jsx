@@ -5,7 +5,6 @@ import NoteIcon from '../assets/Internal note.svg';
 import CampaignDialog from './CampaignDialog';
 import MonthView from './MonthView';
 import Snackbar from './Snackbar';
-import { allPosts as sharedAllPosts, mockNotes as sharedNotes } from '../data/mockData';
 
 // Create Campaign Button Component
 const CreateCampaignButton = ({ date, onOpenDialog }) => {
@@ -527,13 +526,9 @@ const Calendar = ({ posts = [], campaigns = [], notes = [], userPosts = [], dele
     return h;
   }, []);
 
-  // Notes from shared mock data (dynamic dates)
-  const mockNotes = useMemo(() => sharedNotes, []);
-
-  // Use shared data as fallback when no props are provided, merge with user-created posts
+  // Merge scheduled posts with user-created posts
   const displayPosts = useMemo(() => {
-    const basePosts = posts.length > 0 ? posts : sharedAllPosts;
-    return [...basePosts, ...userPosts].filter(p => !deletedPostIds.has(p.id));
+    return [...posts, ...userPosts].filter(p => !deletedPostIds.has(p.id));
   }, [posts, userPosts, deletedPostIds]);
   // Campaigns ALWAYS come from props (shared state in App.jsx) — no local fallback
   const displayCampaigns = campaigns;
@@ -547,7 +542,7 @@ const Calendar = ({ posts = [], campaigns = [], notes = [], userPosts = [], dele
     const found = campaigns.find(c => c.id === id);
     return found ? found.color : (post.campaign ? post.campaign.color : null);
   };
-  const displayNotes = notes.length > 0 ? notes : mockNotes;
+  const displayNotes = notes;
 
   // Navigate to a specific date when navigateToDate prop changes (e.g. after post creation)
   useEffect(() => {

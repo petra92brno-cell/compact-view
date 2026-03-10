@@ -233,6 +233,7 @@ function App() {
         labelGroups: MERCEDES_LABEL_GROUPS,
         brandGroups: MERCEDES_BRAND_GROUPS,
         mockImages: MERCEDES_MOCK_IMAGES,
+        hideSharing: true,
         defaultUtmSettings: {
           linkTrackingEnabled: true,
           utmSourceMode: 'social-channel-id',

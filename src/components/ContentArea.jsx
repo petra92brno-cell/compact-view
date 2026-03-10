@@ -17,6 +17,10 @@ const ContentArea = ({ activeTab, onCreatePost, campaigns, onCampaignsChange, us
   const [selectedPostIds, setSelectedPostIds] = useState(new Set());
   const [totalPostsCount, setTotalPostsCount] = useState(0);
   const [calendarPosts, setCalendarPosts] = useState(mockScheduledPosts || []);
+
+  useEffect(() => {
+    setCalendarPosts(mockScheduledPosts || []);
+  }, [mockScheduledPosts]);
   const [deleteConfirmPostId, setDeleteConfirmPostId] = useState(null);
   const selectAllCallbackRef = useRef(null);
   const viewDropdownRef = useRef(null);
